@@ -141,6 +141,8 @@ th{background:#fafbfc;text-align:left;padding:9px 11px;font-size:12px;font-weigh
 td{padding:8px 11px;border-bottom:1px solid var(--line2)}
 tr:last-child td{border-bottom:none}
 td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:7px;background:#fff;outline:none;width:100%}
+.del{width:28px;height:28px;border-radius:7px;color:var(--ink3);font-size:13px}
+.del:hover{background:var(--todo-bg);color:var(--todo)}
 .csv{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:9px;background:#fff;outline:none;min-height:120px;font-size:13px;line-height:1.6;resize:vertical}
 
 @media(max-width:560px){
@@ -175,7 +177,7 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
       <span id="meName"></span><span class="pill" id="meRole"></span>
-      <button class="linkbtn hide" id="btnAdmin">관리</button>
+      <button class="linkbtn" id="btnAdmin">학생 관리</button>
       <button class="linkbtn" id="btnOut">로그아웃</button>
     </div>
   </div></header>
@@ -201,6 +203,7 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
     <button class="chip" data-f="sent">발송 완료 <b id="cSent">0</b></button>
     <button class="chip" data-f="miss">지난달 미발송 <b id="cMiss">0</b></button>
     <input class="search" id="q" placeholder="학생 이름 검색">
+    <button class="chip" id="chipAdd" style="border-style:dashed">＋ 학생 추가</button>
   </div>
   <main><div class="grid" id="grid"></div></main>
 </div>
@@ -248,17 +251,17 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
 <!-- 관리 -->
 <div class="modal hide" id="admin">
   <div class="mbox">
-    <div class="dhead"><div><h2>관리</h2><div class="sub">선생님 권한 · 학생 명단</div></div><button class="x" id="aClose">✕</button></div>
+    <div class="dhead"><div><h2>학생 관리</h2><div class="sub" id="aSub">학생 등록 · 담당 배정 · 재원 상태</div></div><button class="x" id="aClose">✕</button></div>
     <div class="mbody">
-      <div class="sec">
+      <div class="sec" id="secTeachers">
         <h3>선생님</h3>
         <table id="tTeachers"></table>
         <p class="tiny" style="margin-top:8px">새 선생님은 로그인 화면에서 <b>처음 가입</b>으로 계정을 만들면 여기에 자동으로 나타납니다.</p>
       </div>
       <div class="sec">
         <h3>학생 일괄 등록</h3>
-        <textarea class="csv" id="csv" placeholder="한 줄에 한 명씩&#10;이름,학교,학년,반이름,담당선생님&#10;&#10;김민서,여명중,중2,월수금5시,김선생&#10;박지훈,거성중,중1,화목7시,이선생"></textarea>
-        <p class="hint">엑셀에서 5개 열을 복사해 그대로 붙여넣어도 됩니다. 이름만 있어도 등록됩니다.</p>
+        <textarea class="csv" id="csv" placeholder="한 줄에 한 명씩&#10;이름,학교,학년,반이름&#10;&#10;김민서,여명중,중2,월수금5시&#10;박지훈,거성중,중1,화목7시"></textarea>
+        <p class="hint" id="csvHint">엑셀에서 열을 그대로 복사해 붙여넣어도 됩니다. 이름만 있어도 등록됩니다.</p>
         <div style="display:flex;gap:8px;margin-top:9px;align-items:center">
           <button class="btn ghost" id="btnCsv" style="flex:0 0 auto;padding:9px 18px">등록하기</button>
           <div id="csvMsg" class="tiny"></div>
@@ -369,7 +372,6 @@ async function boot(){
   $('#meName').textContent=ME.name;
   $('#meRole').textContent=ME.role==='director'?'원장':'강사';
   $('#meRole').className='pill'+(ME.role==='director'?' dir':'');
-  $('#btnAdmin').classList.toggle('hide',ME.role!=='director');
   $('#selTeacher').classList.toggle('hide',ME.role!=='director');
   buildPeriods(); await load();
 }
@@ -685,10 +687,15 @@ $('#btnSent').onclick=async()=>{
 
 /* ==================== 관리 ==================== */
 $('#btnAdmin').onclick=async()=>{ $('#admin').classList.remove('hide'); await drawAdmin(); };
+$('#chipAdd').onclick=()=>$('#btnAdmin').click();
 $('#aClose').onclick=()=>$('#admin').classList.add('hide');
 async function drawAdmin(){
-  const { data:ts }=await sb.from('teachers').select('*').order('name'); TEACHERS=ts||[];
-  $('#tTeachers').innerHTML='<tr><th>이름</th><th style="width:110px">권한</th><th style="width:90px">활성</th></tr>'+TEACHERS.map(t=>`<tr>
+  const dir=ME.role==='director';
+  $('#secTeachers').classList.toggle('hide',!dir);
+  $('#aSub').textContent=dir?'선생님 권한 · 학생 등록 · 담당 배정':'내 학생 등록 · 재원 상태';
+  $('#csvHint').textContent=dir?'5번째 칸에 담당선생님 이름을 쓰면 자동 배정됩니다. 이름만 있어도 등록됩니다.':'등록한 학생은 자동으로 내 담당이 됩니다. 이름만 있어도 등록됩니다.';
+  const { data:ts }=await sb.from('teachers').select('*').eq('active',true).order('name'); TEACHERS=ts||[];
+  if(dir) $('#tTeachers').innerHTML='<tr><th>이름</th><th style="width:110px">권한</th><th style="width:90px">활성</th></tr>'+TEACHERS.map(t=>`<tr>
     <td><input data-tid="${t.id}" data-k="name" value="${esc(t.name)}"></td>
     <td><select data-tid="${t.id}" data-k="role"><option value="teacher"${t.role==='teacher'?' selected':''}>강사</option><option value="director"${t.role==='director'?' selected':''}>원장</option></select></td>
     <td><select data-tid="${t.id}" data-k="active"><option value="true"${t.active?' selected':''}>사용</option><option value="false"${!t.active?' selected':''}>중지</option></select></td></tr>`).join('');
@@ -696,18 +703,23 @@ async function drawAdmin(){
     const { error }=await sb.from('teachers').update({ [el.dataset.k]:v }).eq('id',el.dataset.tid); if(error) alert(error.message); else drawAdmin(); });
   const { data:st }=await sb.from('students').select('*').order('name');
   $('#stuCnt').textContent=`· 재원 ${(st||[]).filter(s=>s.status==='active').length}명`;
-  const opts=t=>TEACHERS.filter(x=>x.active).map(x=>`<option value="${x.id}"${t===x.id?' selected':''}>${esc(x.name)}</option>`).join('');
-  $('#tStudents').innerHTML='<tr><th>이름</th><th>학교/학년</th><th style="width:120px">담당</th><th style="width:90px">상태</th></tr>'+(st||[]).map(s=>`<tr>
+  const opts=t=>TEACHERS.map(x=>`<option value="${x.id}"${t===x.id?' selected':''}>${esc(x.name)}</option>`).join('');
+  $('#tStudents').innerHTML=`<tr><th>이름</th><th>학교/학년</th>${dir?'<th style="width:120px">담당</th>':''}<th style="width:90px">상태</th><th></th></tr>`+(st||[]).map(s=>`<tr>
     <td><b>${esc(s.name)}</b></td><td class="tiny">${[s.school,s.grade,s.class_label].filter(Boolean).map(esc).join(' · ')||'—'}</td>
-    <td><select data-sid="${s.id}" data-k="teacher_id"><option value="">미배정</option>${opts(s.teacher_id)}</select></td>
-    <td><select data-sid="${s.id}" data-k="status"><option value="active"${s.status==='active'?' selected':''}>재원</option><option value="paused"${s.status==='paused'?' selected':''}>휴원</option><option value="left"${s.status==='left'?' selected':''}>퇴원</option></select></td></tr>`).join('');
+    ${dir?`<td><select data-sid="${s.id}" data-k="teacher_id"><option value="">미배정</option>${opts(s.teacher_id)}</select></td>`:''}
+    <td><select data-sid="${s.id}" data-k="status"><option value="active"${s.status==='active'?' selected':''}>재원</option><option value="paused"${s.status==='paused'?' selected':''}>휴원</option><option value="left"${s.status==='left'?' selected':''}>퇴원</option></select></td>
+    <td style="width:44px;text-align:center"><button class="del" data-del="${s.id}" data-name="${esc(s.name)}" title="완전 삭제">✕</button></td></tr>`).join('');
   $$('#tStudents [data-sid]').forEach(el=>el.onchange=async()=>{ const v=el.value===''?null:el.value;
     const { error }=await sb.from('students').update({ [el.dataset.k]:v }).eq('id',el.dataset.sid); if(error) alert(error.message); else { await load(); drawAdmin(); } });
+  $$('#tStudents [data-del]').forEach(b=>b.onclick=async()=>{
+    if(!confirm(`${b.dataset.name} 학생을 완전히 삭제할까요?\n지난 리포트 기록도 함께 지워집니다. 잠시 쉬는 거면 '휴원'을 쓰세요.`)) return;
+    const { error }=await sb.from('students').delete().eq('id',b.dataset.del); if(error) alert(error.message); else { toast('삭제했습니다'); await load(); drawAdmin(); } });
 }
 $('#btnCsv').onclick=async()=>{
   const lines=$('#csv').value.split('\n').map(l=>l.trim()).filter(Boolean); if(!lines.length) return;
   const byName={}; TEACHERS.forEach(t=>byName[t.name]=t.id);
-  const rows=lines.map(l=>{ const c=l.split(/[,\t]/).map(x=>x.trim()); return { name:c[0], school:c[1]||null, grade:c[2]||null, class_label:c[3]||null, teacher_id:byName[c[4]]||null, status:'active' }; }).filter(r=>r.name&&r.name!=='이름');
+  const dir=ME.role==='director';
+  const rows=lines.map(l=>{ const c=l.split(/[,\t]/).map(x=>x.trim()); return { name:c[0], school:c[1]||null, grade:c[2]||null, class_label:c[3]||null, teacher_id: dir?(byName[c[4]]||null):ME.id, status:'active' }; }).filter(r=>r.name&&r.name!=='이름');
   const { error }=await sb.from('students').insert(rows);
   $('#csvMsg').textContent=error?('실패: '+error.message):`${rows.length}명 등록됐습니다.`;
   if(!error){ $('#csv').value=''; await load(); await drawAdmin(); }
