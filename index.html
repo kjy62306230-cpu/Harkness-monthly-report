@@ -265,7 +265,7 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
       <div class="sec" id="secTeachers">
         <h3>선생님</h3>
         <table id="tTeachers"></table>
-        <p class="tiny" style="margin-top:8px">새 선생님은 로그인 화면에서 <b>처음 가입</b>으로 계정을 만들면 여기에 자동으로 나타납니다.</p>
+        <p class="tiny" style="margin-top:8px">새 선생님은 로그인 화면에서 <b>처음 가입</b>으로 계정을 만들면 여기에 자동으로 나타납니다. 원장은 최소 한 명 유지됩니다.</p>
       </div>
       <div class="sec">
         <h3>학생 등록</h3>
@@ -711,11 +711,12 @@ async function drawAdmin(){
     const { data:allT }=await sb.from('teachers').select('*').order('name');
     $('#tTeachers').innerHTML='<tr><th>이름</th><th style="width:110px">권한</th><th style="width:90px">활성</th></tr>'+(allT||[]).map(t=>{ const me=t.id===ME.id; return `<tr>
     <td><input data-tid="${t.id}" data-k="name" value="${esc(t.name)}">${me?'<span class="tiny"> (나)</span>':''}</td>
-    <td><select data-tid="${t.id}" data-k="role"${me?' disabled title="본인 권한은 다른 원장이 바꿔야 합니다"':''}><option value="teacher"${t.role==='teacher'?' selected':''}>강사</option><option value="director"${t.role==='director'?' selected':''}>원장</option></select></td>
-    <td><select data-tid="${t.id}" data-k="active"${me?' disabled':''}><option value="true"${t.active?' selected':''}>사용</option><option value="false"${!t.active?' selected':''}>중지</option></select></td></tr>`; }).join('');
+    <td><select data-tid="${t.id}" data-k="role"><option value="teacher"${t.role==='teacher'?' selected':''}>강사</option><option value="director"${t.role==='director'?' selected':''}>원장</option></select></td>
+    <td><select data-tid="${t.id}" data-k="active"><option value="true"${t.active?' selected':''}>사용</option><option value="false"${!t.active?' selected':''}>중지</option></select></td></tr>`; }).join('');
     $$('#tTeachers [data-tid]').forEach(el=>el.onchange=async()=>{ let v=el.value; if(el.dataset.k==='active') v=(v==='true');
       const { error }=await sb.from('teachers').update({ [el.dataset.k]:v }).eq('id',el.dataset.tid);
-      if(error) alert(error.message.includes('LAST_DIRECTOR')?'원장이 최소 한 명은 있어야 합니다. 다른 분을 먼저 원장으로 올린 뒤 바꾸세요.':error.message); else drawAdmin(); });
+      if(error){ toast(error.message.includes('LAST_DIRECTOR')?'원장이 최소 한 명은 있어야 해요. 다른 분을 먼저 원장으로 올려주세요.':'실패: '+error.message); drawAdmin(); }
+      else { if(el.dataset.tid===ME.id){ ME.role=el.dataset.k==='role'?el.value:ME.role; } await load(); drawAdmin(); } });
   }
   const { data:st }=await sb.from('students').select('*').order('name');
   $('#stuCnt').textContent=`· 재원 ${(st||[]).filter(s=>s.status==='active').length}명`;
