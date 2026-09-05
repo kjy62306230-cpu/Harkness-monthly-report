@@ -159,6 +159,9 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
 .hist-b dl{display:grid;grid-template-columns:66px 1fr;gap:4px 10px;margin:12px 0 0}
 .hist-b dt{font-size:11.5px;font-weight:800;color:var(--brand-d);background:var(--soft,#eef1ff);border-radius:6px;padding:3px 0;text-align:center;align-self:start}
 .hist-b dd{margin:0;color:var(--ink)}
+.vtag{flex:0 0 auto;font-size:10.5px;font-weight:800;background:var(--draft-bg);color:var(--draft);padding:2px 7px;border-radius:20px}
+.loadv{margin-top:14px;width:100%;padding:9px;border-radius:8px;background:#fff;border:1.5px solid var(--line);font-size:12.5px;font-weight:800;color:var(--brand-d)}
+.loadv:hover{background:var(--soft,#eef1ff)}
 .hist-b .cs{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);white-space:pre-wrap;color:var(--ink2)}
 .reg{display:flex;flex-direction:column;gap:6px}
 .reg-h,.reg-r{display:grid;grid-template-columns:1.2fr 1fr .7fr 1fr 30px;gap:6px;align-items:center}
@@ -274,8 +277,8 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
     </div>
 
     <div class="sec">
-      <h3>지난 기록 <small id="histCnt"></small></h3>
-      <div id="histWrap"><button class="btn ghost" id="btnHist">지난 기록 불러오기</button></div>
+      <h3>발송 기록 <small id="histCnt"></small></h3>
+      <div id="histWrap"><p class="hint" style="margin:0">불러오는 중…</p></div>
     </div>
   </div>
   <div class="dfoot">
@@ -489,11 +492,10 @@ function open(id){
   $('#pG').value=src.prog_grammar||''; $('#pR').value=src.prog_reading||''; $('#pL').value=src.prog_listening||''; $('#pV').value=src.prog_vocab||'';
   $('#vCounsel').value=src.counsel||'';
   $('#carry').classList.toggle('hide',!carried);
-  $('#btnSent').textContent=CUR.status==='sent'?'발송 취소':'발송 완료';
+  $('#btnSent').textContent='발송 완료';
   stamp();
-  $('#histWrap').innerHTML='<button class="btn ghost" id="btnHist">지난 기록 불러오기</button>';
-  $('#btnHist').onclick=loadHistory; $('#histCnt').textContent='';
-  DIRTY=false; drawCard();
+  $('#histWrap').innerHTML='<p class="hint" style="margin:0">불러오는 중…</p>'; $('#histCnt').textContent='';
+  DIRTY=false; drawCard(); loadHistory();
   $('#drawer').classList.add('on'); $('#scrim').classList.add('on'); document.body.style.overflow='hidden';
 }
 async function close(){
@@ -551,7 +553,7 @@ function buildText(){
       L.push(`${label} · ${parts.join(' ')}`);
     })); L.push(''); }
   if(f.counsel){ L.push('■ 상담 · 피드백'); L.push(f.counsel); L.push(''); }
-  L.push(`담당 ${teacherName()} 선생님`); L.push(`${ACADEMY.name} ${ACADEMY.tel}`);
+  L.push(`${fmtDay(CUR.sent_at)} · 담당 ${teacherName()} 선생님`); L.push(`${ACADEMY.name} ${ACADEMY.tel}`);
   return L.join('\n');
 }
 
@@ -684,7 +686,9 @@ async function renderCard(canvas){
   ctx.fillStyle='#f6f7fa'; ctx.fillRect(0,fy,W,120);
   ctx.fillStyle=BRAND.ink; ctx.font=font(800,27); ctx.fillText(`담당  ${teacherName()} 선생님`, PAD, fy+50);
   ctx.fillStyle=BRAND.ink3; ctx.font=font(500,24); ctx.fillText(`${ACADEMY.name}  ·  ${ACADEMY.tel}`, PAD, fy+88);
-  ctx.textAlign='right'; ctx.font=font(400,21); ctx.fillText(ACADEMY.addr, W-PAD, fy+88); ctx.textAlign='left';
+  ctx.textAlign='right';
+  ctx.fillStyle=BRAND.ink2; ctx.font=font(700,23); ctx.fillText(fmtDay(CUR.sent_at), W-PAD, fy+50);
+  ctx.fillStyle=BRAND.ink3; ctx.font=font(400,21); ctx.fillText(ACADEMY.addr, W-PAD, fy+88); ctx.textAlign='left';
 }
 function rr(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 async function drawCard(){ const cv=$('#cardCv'); await renderCard(cv); $('#cardSize').textContent=`· ${cv.width}×${cv.height}`; }
@@ -713,43 +717,54 @@ $('#btnTxt').onclick=async()=>{
 };
 
 function fmtTs(t){ if(!t) return ''; const d=new Date(t);
-  return `${d.getMonth()+1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+  return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function fmtDay(t){ const d=t?new Date(t):new Date(); return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`; }
 function stamp(){
   const e=$('#dStamp'); if(!CUR||CUR.status==='todo'){ e.className='stamp hide'; return; }
-  const who=CUR.teachers?.name?`${CUR.teachers.name} 선생님`:'';
+  const who=CUR.teachers?.name?` · ${CUR.teachers.name} 선생님`:'';
+  const last=LOGS.length?LOGS[0]:null;
   e.className='stamp '+CUR.status;
   e.textContent=CUR.status==='sent'
-    ? `발송 완료 · ${fmtTs(CUR.sent_at)}${who?' · '+who:''}`
-    : `작성 중 · ${fmtTs(CUR.updated_at)}${who?' · '+who:''}`;
+    ? `발송 완료 · ${fmtTs(CUR.sent_at)}${who}`
+    : (last ? `발송 후 수정 중 · 최근 발송 ${fmtTs(last.sent_at)}${who}`
+            : `작성 중 · ${fmtTs(CUR.updated_at)}${who}`);
 }
 
-/* ==================== 지난 기록 열람 ==================== */
+/* ==================== 발송 기록 (버전 이력) ==================== */
+let LOGS=[];
 async function loadHistory(){
-  if(!CUR) return;
-  const b=$('#btnHist'); b.textContent='불러오는 중…'; b.disabled=true;
-  const { data, error }=await sb.from('feedback_records')
-    .select('*, feedback_cycles(period), teachers(name)')
-    .eq('student_id', CUR.student_id).neq('cycle_id', CYCLE);
-  if(error){ b.textContent='불러오기 실패'; b.disabled=false; return; }
-  const rows=(data||[]).filter(r=>r.status!=='todo')
-    .sort((a,b2)=>(b2.feedback_cycles?.period||'').localeCompare(a.feedback_cycles?.period||''));
-  $('#histCnt').textContent=rows.length?`· ${rows.length}건`:'';
-  if(!rows.length){ $('#histWrap').innerHTML='<p class="hint" style="margin:0">이 학생은 지난 기록이 아직 없습니다.</p>'; return; }
-  $('#histWrap').innerHTML=rows.map((r,i)=>{
+  if(!CUR) return; const sid=CUR.student_id;
+  const { data, error }=await sb.from('feedback_logs').select('*')
+    .eq('student_id', sid).order('sent_at',{ ascending:false }).limit(60);
+  if(!CUR || CUR.student_id!==sid) return;
+  if(error){ $('#histWrap').innerHTML='<p class="hint" style="margin:0">기록을 불러오지 못했습니다.</p>'; return; }
+  LOGS=data||[]; stamp();
+  $('#histCnt').textContent=LOGS.length?`· ${LOGS.length}건`:'';
+  if(!LOGS.length){ $('#histWrap').innerHTML='<p class="hint" style="margin:0">아직 발송 기록이 없습니다. <b>발송 완료</b>를 누르면 여기에 남습니다.</p>'; return; }
+  $('#histWrap').innerHTML=LOGS.map((r,i)=>{
     const P=[['문법',r.prog_grammar],['독해',r.prog_reading],['듣기',r.prog_listening],['단어시험',r.prog_vocab]].filter(x=>x[1]);
     const pv=(r.counsel||P.map(x=>x[1]).join(' · ')||'—').replace(/\n/g,' ');
-    const badge=r.status==='sent'?`발송 · ${fmtTs(r.sent_at)}`:'작성만 함';
+    const ver=r.version>1?`<span class="vtag">${r.version}차 수정</span>`:'';
     return `<div class="hist-i">
-      <button class="hist-t" data-h="${i}"><b>${ymLabel(r.feedback_cycles?.period||'')}</b><span class="pv">${esc(pv)}</span><span class="ar">▾</span></button>
+      <button class="hist-t" data-h="${i}"><b>${ymLabel(r.period)}</b>${ver}<span class="pv">${esc(pv)}</span><span class="ar">▾</span></button>
       <div class="hist-b hide" id="hb${i}">
-        <p class="hint" style="margin:10px 0 0">${esc(badge)}${r.teachers?.name?' · '+esc(r.teachers.name)+' 선생님':''}</p>
+        <p class="hint" style="margin:10px 0 0">발송 ${esc(fmtTs(r.sent_at))}${r.teacher_name?' · '+esc(r.teacher_name)+' 선생님':''}</p>
         ${P.length?`<dl>${P.map(([k,v2])=>`<dt>${k}</dt><dd>${esc(v2)}</dd>`).join('')}</dl>`:''}
         ${r.counsel?`<div class="cs">${esc(r.counsel)}</div>`:''}
+        ${r.period===PERIOD?`<button class="loadv" data-l="${i}">이 내용 불러와서 고치기</button>`:''}
       </div></div>`;
   }).join('');
   $$('#histWrap .hist-t').forEach(t=>t.onclick=()=>{
-    const body=$('#hb'+t.dataset.h); const open=!body.classList.contains('hide');
-    body.classList.toggle('hide',open); t.querySelector('.ar').textContent=open?'▾':'▴';
+    const body=$('#hb'+t.dataset.h); const op=!body.classList.contains('hide');
+    body.classList.toggle('hide',op); t.querySelector('.ar').textContent=op?'▾':'▴';
+  });
+  $$('#histWrap .loadv').forEach(b=>b.onclick=()=>{
+    const r=LOGS[+b.dataset.l];
+    $('#pG').value=r.prog_grammar||''; $('#pR').value=r.prog_reading||''; $('#pL').value=r.prog_listening||'';
+    $('#pV').value=r.prog_vocab||''; $('#vCounsel').value=r.counsel||'';
+    $('#carry').classList.add('hide'); DIRTY=true; drawCard();
+    $('.dbody').scrollTo({ top:0, behavior:'smooth' });
+    toast('불러왔습니다. 고친 뒤 발송 완료를 누르면 새 기록으로 남습니다');
   });
 }
 
@@ -758,8 +773,8 @@ async function save(status,silent){
   if(!CUR) return null;
   const payload={ ...fields(), message:buildText() };
   if(status==='sent'){ payload.status='sent'; payload.sent_at=new Date().toISOString(); }
-  else if(status==='unsent'){ payload.status='drafted'; payload.sent_at=null; }
-  else if(CUR.status!=='sent'){ payload.status='drafted'; payload.drafted_at=new Date().toISOString(); }
+  else if(CUR.status==='sent'){ if(DIRTY) payload.status='drafted'; }
+  else { payload.status='drafted'; payload.drafted_at=new Date().toISOString(); }
   if(status==='sent'){
     try{
       await drawCard(); const blob=await cardBlob();
@@ -778,10 +793,13 @@ $('#btnSave').onclick=async()=>{ await save('drafted'); toast('저장됐습니�
 
 $('#btnSent').onclick=async()=>{
   if(!CUR) return;
-  if(CUR.status==='sent'){ await save('unsent'); toast('발송 취소했습니다'); return; }
   if(!hasContent()){ toast('내용을 먼저 입력해 주세요'); return; }
-  await save('sent');
-  toast('발송 완료로 기록했습니다');
+  if(CUR.status==='sent' && !DIRTY){ toast('이미 발송 기록이 있습니다. 고친 내용이 있을 때 다시 눌러주세요'); return; }
+  const again=LOGS.length>0;
+  await save('sent', true);
+  await loadHistory();
+  await close();
+  toast(again?'새 기록으로 남겼습니다':'발송 완료로 기록했습니다');
 };
 
 /* ==================== 관리 ==================== */
