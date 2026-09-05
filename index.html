@@ -273,7 +273,8 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
         <button id="btnImg">이미지 저장</button>
         <button id="btnTxt">문구 복사</button>
       </div>
-      <p class="hint"><b>이미지 저장</b> → 카톡으로 학부모께 전송 → <b>발송 완료</b> 체크. 이 순서입니다.</p>
+      <p class="hint"><b>이미지 저장</b> → 카톡으로 학부모께 전송 → <b>발송 완료</b> 체크. 이 순서입니다.<br>
+      발송한 뒤 내용을 고치고 다시 <b>발송 완료</b>를 누르면, <b>이전 기록은 그대로 두고</b> 그 위에 새 기록이 쌓입니다.</p>
     </div>
 
     <div class="sec">
@@ -470,7 +471,8 @@ function render(){
   if(QUERY) list=list.filter(r=>r.students.name.includes(QUERY));
   const g=$('#grid');
   if(!list.length){ g.innerHTML=`<div class="empty" style="grid-column:1/-1"><b>${n?'해당하는 학생이 없습니다':'등록된 학생이 없습니다'}</b>${n?'필터를 바꿔 보세요':'관리 → 학생 일괄 등록으로 명단을 넣어주세요'}</div>`; return; }
-  g.innerHTML=list.map(r=>{ const s=r.students; const label=r.status==='sent'?'발송 완료':r.status==='drafted'?'작성 중':'미작성';
+  g.innerHTML=list.map(r=>{ const s=r.students;
+    const label=r.status==='sent'?'발송 완료':r.status==='drafted'?(r.sent_at?'발송 후 수정 중':'작성 중'):'미작성';
     return `<button class="card ${r.status}" data-id="${r.id}"><div class="cname">${esc(s.name)}</div>
       <div class="cmeta">${[s.school,s.grade,s.class_label].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</div>
       <div class="cfoot"><span class="badge ${r.status}">${label}</span>${MISS.has(r.student_id)?'<span class="badge miss">지난달 미발송</span>':''}<span class="tname">${esc(r.teachers?.name||'미배정')}</span></div></button>`; }).join('');
@@ -751,7 +753,7 @@ async function loadHistory(){
         <p class="hint" style="margin:10px 0 0">발송 ${esc(fmtTs(r.sent_at))}${r.teacher_name?' · '+esc(r.teacher_name)+' 선생님':''}</p>
         ${P.length?`<dl>${P.map(([k,v2])=>`<dt>${k}</dt><dd>${esc(v2)}</dd>`).join('')}</dl>`:''}
         ${r.counsel?`<div class="cs">${esc(r.counsel)}</div>`:''}
-        ${r.period===PERIOD?`<button class="loadv" data-l="${i}">이 내용 불러와서 고치기</button>`:''}
+        <button class="loadv" data-l="${i}">${r.period===PERIOD?'이 내용 불러와서 고치기':`이 내용 가져와서 ${ymLabel(PERIOD)}에 쓰기`}</button>
       </div></div>`;
   }).join('');
   $$('#histWrap .hist-t').forEach(t=>t.onclick=()=>{
@@ -764,7 +766,8 @@ async function loadHistory(){
     $('#pV').value=r.prog_vocab||''; $('#vCounsel').value=r.counsel||'';
     $('#carry').classList.add('hide'); DIRTY=true; drawCard();
     $('.dbody').scrollTo({ top:0, behavior:'smooth' });
-    toast('불러왔습니다. 고친 뒤 발송 완료를 누르면 새 기록으로 남습니다');
+    toast(r.period===PERIOD?'불러왔습니다. 고친 뒤 발송 완료를 누르면 새 기록이 쌓입니다'
+                           :`${ymLabel(r.period)} 내용을 가져왔습니다. 고쳐서 ${ymLabel(PERIOD)} 기록으로 남기세요`);
   });
 }
 
