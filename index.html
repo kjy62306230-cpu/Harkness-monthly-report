@@ -141,6 +141,20 @@ th{background:#fafbfc;text-align:left;padding:9px 11px;font-size:12px;font-weigh
 td{padding:8px 11px;border-bottom:1px solid var(--line2)}
 tr:last-child td{border-bottom:none}
 td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:7px;background:#fff;outline:none;width:100%}
+.stamp{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px}
+.stamp.sent{background:var(--sent-bg);color:var(--sent)}
+.stamp.drafted{background:var(--draft-bg);color:var(--draft)}
+.hist-i{background:#fff;border:1.5px solid var(--line);border-radius:10px;margin-bottom:7px;overflow:hidden}
+.hist-t{width:100%;display:flex;align-items:center;gap:9px;padding:11px 13px;text-align:left}
+.hist-t:hover{background:#fafbfc}
+.hist-t b{font-size:14px;font-weight:900;min-width:62px}
+.hist-t .pv{font-size:12.5px;color:var(--ink3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-t .ar{color:var(--ink3);font-size:11px}
+.hist-b{padding:2px 14px 14px;border-top:1px solid var(--line2);font-size:13.5px;line-height:1.65}
+.hist-b dl{display:grid;grid-template-columns:66px 1fr;gap:4px 10px;margin:12px 0 0}
+.hist-b dt{font-size:11.5px;font-weight:800;color:var(--brand-d);background:var(--soft,#eef1ff);border-radius:6px;padding:3px 0;text-align:center;align-self:start}
+.hist-b dd{margin:0;color:var(--ink)}
+.hist-b .cs{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);white-space:pre-wrap;color:var(--ink2)}
 .reg{display:flex;flex-direction:column;gap:6px}
 .reg-h,.reg-r{display:grid;grid-template-columns:1.2fr 1fr .7fr 1fr 30px;gap:6px;align-items:center}
 .reg-h span{font-size:11.5px;font-weight:800;color:var(--ink2);padding:0 4px}
@@ -221,7 +235,7 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer">
   <div class="dhead">
-    <div><h2 id="dName">—</h2><div class="sub" id="dMeta"></div></div>
+    <div><h2 id="dName">—</h2><div class="sub" id="dMeta"></div><div id="dStamp" class="stamp hide"></div></div>
     <button class="x" id="dClose">✕</button>
   </div>
   <div class="dbody">
@@ -247,7 +261,12 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
         <button id="btnImg">이미지 저장</button>
         <button id="btnTxt">문구 복사</button>
       </div>
-      <p class="hint"><b>발송 완료</b>를 누르면 카드가 보관되고, 폰에서는 카톡 공유창이 바로 열립니다.</p>
+      <p class="hint"><b>발송 완료</b>를 누르면 카드가 학원에 보관되고, 폰에서는 카톡 공유창이 바로 열립니다.</p>
+    </div>
+
+    <div class="sec">
+      <h3>지난 기록 <small id="histCnt"></small></h3>
+      <div id="histWrap"><button class="btn ghost" id="btnHist">지난 기록 불러오기</button></div>
     </div>
   </div>
   <div class="dfoot">
@@ -453,6 +472,9 @@ function open(id){
   $('#pG').value=CUR.prog_grammar||''; $('#pR').value=CUR.prog_reading||''; $('#pL').value=CUR.prog_listening||''; $('#pV').value=CUR.prog_vocab||'';
   $('#vCounsel').value=CUR.counsel||'';
   $('#btnSent').textContent=CUR.status==='sent'?'발송 취소':'발송 완료';
+  stamp();
+  $('#histWrap').innerHTML='<button class="btn ghost" id="btnHist">지난 기록 불러오기</button>';
+  $('#btnHist').onclick=loadHistory; $('#histCnt').textContent='';
   DIRTY=false; drawCard();
   $('#drawer').classList.add('on'); $('#scrim').classList.add('on'); document.body.style.overflow='hidden';
 }
@@ -658,6 +680,47 @@ $('#btnTxt').onclick=async()=>{
   toast('문구를 복사했습니다');
 };
 
+function fmtTs(t){ if(!t) return ''; const d=new Date(t);
+  return `${d.getMonth()+1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function stamp(){
+  const e=$('#dStamp'); if(!CUR||CUR.status==='todo'){ e.className='stamp hide'; return; }
+  const who=CUR.teachers?.name?`${CUR.teachers.name} 선생님`:'';
+  e.className='stamp '+CUR.status;
+  e.textContent=CUR.status==='sent'
+    ? `발송 완료 · ${fmtTs(CUR.sent_at)}${who?' · '+who:''}`
+    : `작성 중 · ${fmtTs(CUR.updated_at)}${who?' · '+who:''}`;
+}
+
+/* ==================== 지난 기록 열람 ==================== */
+async function loadHistory(){
+  if(!CUR) return;
+  const b=$('#btnHist'); b.textContent='불러오는 중…'; b.disabled=true;
+  const { data, error }=await sb.from('feedback_records')
+    .select('*, feedback_cycles(period), teachers(name)')
+    .eq('student_id', CUR.student_id).neq('cycle_id', CYCLE);
+  if(error){ b.textContent='불러오기 실패'; b.disabled=false; return; }
+  const rows=(data||[]).filter(r=>r.status!=='todo')
+    .sort((a,b2)=>(b2.feedback_cycles?.period||'').localeCompare(a.feedback_cycles?.period||''));
+  $('#histCnt').textContent=rows.length?`· ${rows.length}건`:'';
+  if(!rows.length){ $('#histWrap').innerHTML='<p class="hint" style="margin:0">이 학생은 지난 기록이 아직 없습니다.</p>'; return; }
+  $('#histWrap').innerHTML=rows.map((r,i)=>{
+    const P=[['문법',r.prog_grammar],['독해',r.prog_reading],['듣기',r.prog_listening],['단어시험',r.prog_vocab]].filter(x=>x[1]);
+    const pv=(r.counsel||P.map(x=>x[1]).join(' · ')||'—').replace(/\n/g,' ');
+    const badge=r.status==='sent'?`발송 · ${fmtTs(r.sent_at)}`:'작성만 함';
+    return `<div class="hist-i">
+      <button class="hist-t" data-h="${i}"><b>${ymLabel(r.feedback_cycles?.period||'')}</b><span class="pv">${esc(pv)}</span><span class="ar">▾</span></button>
+      <div class="hist-b hide" id="hb${i}">
+        <p class="hint" style="margin:10px 0 0">${esc(badge)}${r.teachers?.name?' · '+esc(r.teachers.name)+' 선생님':''}</p>
+        ${P.length?`<dl>${P.map(([k,v2])=>`<dt>${k}</dt><dd>${esc(v2)}</dd>`).join('')}</dl>`:''}
+        ${r.counsel?`<div class="cs">${esc(r.counsel)}</div>`:''}
+      </div></div>`;
+  }).join('');
+  $$('#histWrap .hist-t').forEach(t=>t.onclick=()=>{
+    const body=$('#hb'+t.dataset.h); const open=!body.classList.contains('hide');
+    body.classList.toggle('hide',open); t.querySelector('.ar').textContent=open?'▾':'▴';
+  });
+}
+
 /* ==================== 저장 · 발송 ==================== */
 async function save(status,silent){
   if(!CUR) return null;
@@ -675,7 +738,7 @@ async function save(status,silent){
   }
   const { data, error }=await sb.from('feedback_records').update(payload).eq('id',CUR.id).select(SEL).single();
   if(error){ alert('저장 실패: '+error.message); return null; }
-  const i=ROWS.findIndex(r=>r.id===CUR.id); if(i>=0) ROWS[i]=data; CUR=data; DIRTY=false; render();
+  const i=ROWS.findIndex(r=>r.id===CUR.id); if(i>=0) ROWS[i]=data; CUR=data; DIRTY=false; stamp(); render();
   if(!silent) await close();
   return data;
 }
