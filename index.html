@@ -141,6 +141,11 @@ th{background:#fafbfc;text-align:left;padding:9px 11px;font-size:12px;font-weigh
 td{padding:8px 11px;border-bottom:1px solid var(--line2)}
 tr:last-child td{border-bottom:none}
 td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:7px;background:#fff;outline:none;width:100%}
+.carry{display:flex;align-items:center;gap:10px;background:var(--draft-bg);border:1.5px solid #f0e0bd;color:var(--draft);
+  border-radius:10px;padding:11px 13px;margin-bottom:16px;font-size:13px;line-height:1.5}
+.carry div{flex:1}
+.carry button{flex:0 0 auto;background:#fff;border:1.5px solid #e8d5ab;color:var(--draft);font-size:12.5px;font-weight:800;padding:7px 12px;border-radius:8px}
+.carry button:hover{background:#fffaf0}
 .stamp{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px}
 .stamp.sent{background:var(--sent-bg);color:var(--sent)}
 .stamp.drafted{background:var(--draft-bg);color:var(--draft)}
@@ -239,6 +244,10 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
     <button class="x" id="dClose">✕</button>
   </div>
   <div class="dbody">
+    <div class="carry hide" id="carry">
+      <div><b>지난달 내용을 불러왔습니다.</b><br>이어서 고쳐 쓰시면 됩니다.</div>
+      <button id="btnClearCarry">지우고 새로</button>
+    </div>
     <div class="sec">
       <h3>이번 달 진도 <small>· 비워두면 카드에서 빠집니다</small></h3>
       <div class="prog">
@@ -261,7 +270,7 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
         <button id="btnImg">이미지 저장</button>
         <button id="btnTxt">문구 복사</button>
       </div>
-      <p class="hint"><b>발송 완료</b>를 누르면 카드가 학원에 보관되고, 폰에서는 카톡 공유창이 바로 열립니다.</p>
+      <p class="hint"><b>이미지 저장</b> → 카톡으로 학부모께 전송 → <b>발송 완료</b> 체크. 이 순서입니다.</p>
     </div>
 
     <div class="sec">
@@ -343,7 +352,7 @@ if(!window.supabase || !window.supabase.createClient){
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ storage:safeStorage, persistSession:true, autoRefreshToken:true } });
 
 /* ==================== 상태 ==================== */
-let ME=null, PERIOD=ymNow(), CYCLE=null, ROWS=[], MISS=new Set(), FILTER='all', QUERY='', CUR=null, TEACHERS=[], TFILTER='all';
+let ME=null, PERIOD=ymNow(), CYCLE=null, ROWS=[], MISS=new Set(), PREV={}, FILTER='all', QUERY='', CUR=null, TEACHERS=[], TFILTER='all';
 let LOGO=null, DIRTY=false;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 function ymNow(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
@@ -421,9 +430,13 @@ async function load(){
   const { data, error }=await sb.from('feedback_records').select(SEL).eq('cycle_id',CYCLE);
   if(error){ alert(error.message); return; }
   ROWS=(data||[]).filter(r=>r.students&&r.students.status==='active').sort((a,b)=>a.students.name.localeCompare(b.students.name,'ko'));
-  MISS=new Set();
+  MISS=new Set(); PREV={};
   const { data:pc }=await sb.from('feedback_cycles').select('id').eq('period',ymPrev(PERIOD)).maybeSingle();
-  if(pc){ const { data:pr }=await sb.from('feedback_records').select('student_id,status').eq('cycle_id',pc.id).neq('status','sent'); (pr||[]).forEach(r=>MISS.add(r.student_id)); }
+  if(pc){
+    const { data:pr }=await sb.from('feedback_records')
+      .select('student_id,status,prog_grammar,prog_reading,prog_listening,prog_vocab,counsel').eq('cycle_id',pc.id);
+    (pr||[]).forEach(r=>{ if(r.status!=='sent') MISS.add(r.student_id); PREV[r.student_id]=r; });
+  }
   if(ME.role==='director'){
     const { data:ts }=await sb.from('teachers').select('*').eq('active',true).order('name'); TEACHERS=ts||[];
     const sel=$('#selTeacher'); const keep=sel.value||'all'; sel.innerHTML='';
@@ -469,8 +482,13 @@ function open(id){
   CUR=ROWS.find(r=>r.id===id); if(!CUR) return; const s=CUR.students;
   $('#dName').textContent=s.name;
   $('#dMeta').textContent=[s.school,s.grade,s.class_label].filter(Boolean).join(' · ')+' · '+ymLabel(PERIOD);
-  $('#pG').value=CUR.prog_grammar||''; $('#pR').value=CUR.prog_reading||''; $('#pL').value=CUR.prog_listening||''; $('#pV').value=CUR.prog_vocab||'';
-  $('#vCounsel').value=CUR.counsel||'';
+  const empty=!(CUR.prog_grammar||CUR.prog_reading||CUR.prog_listening||CUR.prog_vocab||CUR.counsel);
+  const pv=PREV[CUR.student_id];
+  const carried=empty && CUR.status==='todo' && pv && (pv.prog_grammar||pv.prog_reading||pv.prog_listening||pv.prog_vocab||pv.counsel);
+  const src=carried?pv:CUR;
+  $('#pG').value=src.prog_grammar||''; $('#pR').value=src.prog_reading||''; $('#pL').value=src.prog_listening||''; $('#pV').value=src.prog_vocab||'';
+  $('#vCounsel').value=src.counsel||'';
+  $('#carry').classList.toggle('hide',!carried);
   $('#btnSent').textContent=CUR.status==='sent'?'발송 취소':'발송 완료';
   stamp();
   $('#histWrap').innerHTML='<button class="btn ghost" id="btnHist">지난 기록 불러오기</button>';
@@ -482,6 +500,7 @@ async function close(){
   if(CUR&&DIRTY&&CUR.status!=='sent'){ await save('drafted',true); toast('저장됐습니다'); }
   $('#drawer').classList.remove('on'); $('#scrim').classList.remove('on'); document.body.style.overflow=''; CUR=null;
 }
+$('#btnClearCarry').onclick=()=>{ F.forEach(id=>$('#'+id).value=''); $('#carry').classList.add('hide'); DIRTY=true; drawCard(); $('#pG').focus(); };
 $('#dClose').onclick=close; $('#scrim').onclick=close;
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&CUR) close(); });
 let drawT; F.forEach(id=>$('#'+id).addEventListener('input',()=>{ DIRTY=true; clearTimeout(drawT); drawT=setTimeout(drawCard,120); }));
@@ -673,7 +692,20 @@ function cardBlob(){ return new Promise(res=>$('#cardCv').toBlob(res,'image/png'
 function fileName(){ return `${CUR.students.name}_${PERIOD}_학습리포트.png`; }
 function download(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.append(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },800); }
 
-$('#btnImg').onclick=async()=>{ await drawCard(); download(await cardBlob(), fileName()); toast('이미지를 저장했습니다'); };
+$('#btnImg').onclick=async()=>{
+  if(!hasContent()){ toast('내용을 먼저 입력해 주세요'); return; }
+  await drawCard();
+  const blob=await cardBlob(); const file=new File([blob], fileName(), { type:'image/png' });
+  let shared=false;
+  if(navigator.canShare && navigator.canShare({ files:[file] })){
+    try{ await navigator.share({ files:[file], title:`${CUR.students.name} 학습 리포트` }); shared=true; }
+    catch(e){ if(e.name==='AbortError') return; }
+  }
+  if(!shared) download(blob, fileName());
+  await save('drafted', true);
+  toast(shared?'저장했습니다. 발송 후 [발송 완료]를 눌러주세요':'이미지를 받았습니다. 카톡으로 보낸 뒤 [발송 완료]');
+};
+function hasContent(){ const f=fields(); return !!(f.counsel||f.prog_grammar||f.prog_reading||f.prog_listening||f.prog_vocab); }
 $('#btnTxt').onclick=async()=>{
   const t=buildText();
   try{ await navigator.clipboard.writeText(t); }catch{ const ta=document.createElement('textarea'); ta.value=t; document.body.append(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
@@ -747,17 +779,9 @@ $('#btnSave').onclick=async()=>{ await save('drafted'); toast('저장됐습니�
 $('#btnSent').onclick=async()=>{
   if(!CUR) return;
   if(CUR.status==='sent'){ await save('unsent'); toast('발송 취소했습니다'); return; }
-  if(!fields().counsel&&!fields().prog_grammar&&!fields().prog_reading&&!fields().prog_listening&&!fields().prog_vocab){ toast('내용을 먼저 입력해 주세요'); return; }
-  await drawCard();
-  const blob=await cardBlob(); const file=new File([blob], fileName(), { type:'image/png' });
-  let shared=false;
-  if(navigator.canShare && navigator.canShare({ files:[file] })){
-    try{ await navigator.share({ files:[file], title:`${CUR.students.name} 학습 리포트`, text:buildText() }); shared=true; }
-    catch(e){ if(e.name==='AbortError'){ await save('drafted',true); toast('공유를 취소했습니다. 작성 중으로 저장했어요'); return; } }
-  }
-  if(!shared) download(blob, fileName());
+  if(!hasContent()){ toast('내용을 먼저 입력해 주세요'); return; }
   await save('sent');
-  toast(shared?'발송 완료로 기록했습니다':'이미지를 저장했습니다. 카톡에 올려주세요');
+  toast('발송 완료로 기록했습니다');
 };
 
 /* ==================== 관리 ==================== */
