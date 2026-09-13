@@ -141,6 +141,42 @@ th{background:#fafbfc;text-align:left;padding:9px 11px;font-size:12px;font-weigh
 td{padding:8px 11px;border-bottom:1px solid var(--line2)}
 tr:last-child td{border-bottom:none}
 td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:7px;background:#fff;outline:none;width:100%}
+.chip.mic{border-color:#c9d4ff;background:var(--soft,#eef1ff);color:var(--brand-d)}
+.chip.mic:hover{background:#e2e8ff}
+.ex{margin-top:12px;background:#fff;border:1.5px dashed var(--line);border-radius:var(--r);padding:13px 15px}
+.ex b{font-size:12.5px;color:var(--ink2)}
+.ex p{margin:8px 0 0;font-size:13px;line-height:1.7;color:var(--ink3)}
+.sres{background:#fff;border:1.5px solid var(--line);border-radius:var(--r);padding:13px 15px;margin-top:9px}
+.sres.off{opacity:.5}
+.sres.bad{border-color:#f0d5b8;background:#fffaf2}
+.srh{display:flex;align-items:center;gap:9px}
+.srh input[type=checkbox]{width:19px;height:19px;accent-color:var(--brand);flex:0 0 auto}
+.srh b{font-size:15.5px;font-weight:900}
+.srh .meta{font-size:12px;color:var(--ink3)}
+.srh .warn{margin-left:auto;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px;background:var(--draft-bg);color:var(--draft)}
+.srb{margin-top:10px;padding-left:28px}
+.srb dl{display:grid;grid-template-columns:62px 1fr;gap:4px 9px;margin:0}
+.srb dt{font-size:11px;font-weight:800;color:var(--brand-d);background:var(--soft,#eef1ff);border-radius:6px;padding:3px 0;text-align:center;align-self:start}
+.srb dd{margin:0;font-size:13.5px;color:var(--ink)}
+.srb .cs{margin-top:9px;font-size:13.5px;line-height:1.65;color:var(--ink2);white-space:pre-wrap}
+.srb select{margin-top:8px;width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;background:#fff}
+.rec{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.recBtn{display:flex;align-items:center;gap:9px;padding:11px 18px;border-radius:10px;background:var(--brand);color:#fff;font-weight:800;font-size:14px;white-space:nowrap;transition:.15s}
+.recBtn:hover{background:var(--brand-d)}
+.recBtn:disabled{opacity:.55;cursor:default}
+.recBtn .mic{font-size:11px;line-height:1}
+.recBtn.on{background:var(--coral)}
+.recBtn.on .mic{animation:blink 1s steps(2,start) infinite}
+@keyframes blink{to{opacity:.25}}
+.recInfo{display:flex;flex-direction:column;gap:2px;min-width:0}
+#recTime{font-size:15px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--ink2)}
+#recHint{font-size:11.5px;color:var(--ink3);line-height:1.45}
+.voiceMsg{margin-top:9px;font-size:12.5px;font-weight:700;padding:9px 12px;border-radius:9px;background:var(--sent-bg);color:var(--sent)}
+.voiceMsg.err{background:var(--todo-bg);color:var(--todo)}
+.voiceMsg.work{background:var(--draft-bg);color:var(--draft)}
+.tr{margin-top:9px;background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:9px 12px;font-size:12.5px}
+.tr summary{cursor:pointer;font-weight:700;color:var(--ink3)}
+.tr div{margin-top:8px;color:var(--ink2);line-height:1.6;white-space:pre-wrap}
 .carry{display:flex;align-items:center;gap:10px;background:var(--draft-bg);border:1.5px solid #f0e0bd;color:var(--draft);
   border-radius:10px;padding:11px 13px;margin-bottom:16px;font-size:13px;line-height:1.5}
 .carry div{flex:1}
@@ -235,6 +271,7 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
     <button class="chip" data-f="miss">지난달 미발송 <b id="cMiss">0</b></button>
     <input class="search" id="q" placeholder="학생 이름 검색">
     <button class="chip" id="chipAdd" style="border-style:dashed">＋ 학생 추가</button>
+    <button class="chip mic" id="chipVoice">🎤 여러 명 한 번에</button>
   </div>
   <main><div class="grid" id="grid"></div></main>
 </div>
@@ -251,6 +288,16 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
       <div><b>지난달 내용을 불러왔습니다.</b><br>이어서 고쳐 쓰시면 됩니다.</div>
       <button id="btnClearCarry">지우고 새로</button>
     </div>
+    <div class="sec">
+      <h3>음성으로 한 번에 <small>· 말하면 아래 칸이 채워집니다</small></h3>
+      <div class="rec" id="recBox">
+        <button class="recBtn" id="btnRec"><span class="mic">●</span><span id="recLabel">녹음 시작</span></button>
+        <div class="recInfo"><span id="recTime">0:00</span><span id="recHint">진도와 학생 이야기를 편하게 말씀하세요</span></div>
+      </div>
+      <div class="voiceMsg hide" id="voiceMsg"></div>
+      <details class="tr hide" id="trBox"><summary>받아쓴 내용 보기</summary><div id="trText"></div></details>
+    </div>
+
     <div class="sec">
       <h3>이번 달 진도 <small>· 비워두면 카드에서 빠집니다</small></h3>
       <div class="prog">
@@ -288,6 +335,39 @@ td select,td input{padding:5px 7px;border:1.5px solid var(--line);border-radius:
   </div>
 </aside>
 <div class="toast" id="toast"></div>
+
+<!-- 여러 명 음성 -->
+<div class="modal hide" id="mv">
+  <div class="mbox" style="max-width:640px">
+    <div class="dhead">
+      <div><h2>여러 명 한 번에</h2><div class="sub" id="mvSub">학생 이름을 부르면서 이어서 말씀하세요</div></div>
+      <button class="x" id="mvClose">✕</button>
+    </div>
+    <div class="mbody" id="mvBody">
+      <div class="rec">
+        <button class="recBtn" id="mBtnRec"><span class="mic">●</span><span id="mRecLabel">녹음 시작</span></button>
+        <div class="recInfo"><span id="mRecTime">0:00</span><span id="mRecHint">담당 학생 <b id="mRosterN">0</b>명 중에서 찾습니다</span></div>
+      </div>
+      <div class="voiceMsg hide" id="mvMsg"></div>
+
+      <div class="ex" id="mvEx">
+        <b>이렇게 말씀하시면 됩니다</b>
+        <p>“민서는 3800제 7장부터 9장까지 관계대명사 나갔고,
+        독해는 브릭스 250 2권 5유닛에서 7유닛 했어요.
+        처음엔 어려워했는데 3주차부터 확 늘었어요.<br><br>
+        지훈이는 어휘끝 21일차부터 30일차 했고,
+        숙제를 자주 빠뜨려서 집에서 좀 봐주셔야 할 것 같아요.”</p>
+      </div>
+
+      <div id="mvResult"></div>
+      <details class="tr hide" id="mvTrBox"><summary>받아쓴 내용 보기</summary><div id="mvTrText"></div></details>
+    </div>
+    <div class="dfoot hide" id="mvFoot">
+      <button class="btn ghost" id="mvRedo">다시 녹음</button>
+      <button class="btn" id="mvApply">적용하기</button>
+    </div>
+  </div>
+</div>
 
 <!-- 관리 -->
 <div class="modal hide" id="admin">
@@ -496,6 +576,7 @@ function open(id){
   $('#carry').classList.toggle('hide',!carried);
   $('#btnSent').textContent='발송 완료';
   stamp();
+  stopRec(); vmsg(''); $('#trBox').classList.add('hide'); $('#recTime').textContent='0:00'; BEFORE=null;
   $('#histWrap').innerHTML='<p class="hint" style="margin:0">불러오는 중…</p>'; $('#histCnt').textContent='';
   DIRTY=false; drawCard(); loadHistory();
   $('#drawer').classList.add('on'); $('#scrim').classList.add('on'); document.body.style.overflow='hidden';
@@ -544,9 +625,219 @@ function progressItems(f){
     .filter(x=>x[1]).map(([label,raw])=>({ label, items:parseProgress(raw,label) }));
 }
 
+/* ==================== 음성 -> 자동 정리 ==================== */
+let REC=null, CHUNKS=[], RECT=null, RECSEC=0, BEFORE=null;
+function pickMime(){
+  for(const m of ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/aac','audio/ogg']){
+    if(window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+  }
+  return '';
+}
+function vmsg(t,cls){ const e=$('#voiceMsg'); if(!t){ e.className='voiceMsg hide'; return; } e.className='voiceMsg'+(cls?' '+cls:''); e.textContent=t; }
+function recUI(on){
+  $('#btnRec').classList.toggle('on',on);
+  $('#recLabel').textContent=on?'녹음 끝내기':'녹음 시작';
+  $('#recHint').textContent=on?'다 말씀하셨으면 끝내기를 누르세요':'진도와 학생 이야기를 편하게 말씀하세요';
+}
+function recTick(){ RECSEC++; $('#recTime').textContent=Math.floor(RECSEC/60)+':'+String(RECSEC%60).padStart(2,'0');
+  if(RECSEC>=180) stopRec(); }
+
+$('#btnRec').onclick=async()=>{
+  if(REC && REC.state==='recording'){ stopRec(); return; }
+  if(!navigator.mediaDevices || !window.MediaRecorder){ vmsg('이 브라우저는 녹음을 지원하지 않습니다. 키보드의 마이크를 쓰거나 직접 입력해 주세요.','err'); return; }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({ audio:true });
+    const mime=pickMime();
+    REC=new MediaRecorder(stream, mime?{ mimeType:mime }:undefined);
+    CHUNKS=[]; RECSEC=0; $('#recTime').textContent='0:00'; vmsg(''); $('#trBox').classList.add('hide');
+    REC.ondataavailable=e=>{ if(e.data && e.data.size) CHUNKS.push(e.data); };
+    REC.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      clearInterval(RECT); recUI(false);
+      const blob=new Blob(CHUNKS,{ type:REC.mimeType||'audio/webm' });
+      if(blob.size<1200){ vmsg('녹음이 너무 짧습니다. 다시 눌러서 말씀해 주세요.','err'); return; }
+      await sendVoice(blob);
+    };
+    REC.start(); recUI(true); RECT=setInterval(recTick,1000);
+  }catch(e){
+    vmsg(e.name==='NotAllowedError'?'마이크 사용이 차단돼 있습니다. 브라우저 주소창의 자물쇠에서 마이크를 허용해 주세요.':'마이크를 열 수 없습니다: '+e.message,'err');
+  }
+};
+function stopRec(){ try{ REC && REC.state==='recording' && REC.stop(); }catch{} }
+
+function blobToB64(blob){ return new Promise((res,rej)=>{ const r=new FileReader();
+  r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(blob); }); }
+
+async function sendVoice(blob){
+  if(!CUR) return;
+  $('#btnRec').disabled=true; vmsg('정리하는 중입니다… 20초쯤 걸립니다','work');
+  try{
+    const b64=await blobToB64(blob);
+    const s=CUR.students;
+    const { data, error }=await sb.functions.invoke('voice-parse',{
+      body:{ audio:b64, mime:(blob.type||'audio/webm').split(';')[0], student:{ name:s.name, school:s.school, grade:s.grade } }
+    });
+    if(error) throw new Error(error.message||'요청 실패');
+    if(data?.error){
+      if(data.error==='NO_KEY') throw new Error('Gemini 키가 아직 등록되지 않았습니다. J님께 문의해 주세요.');
+      throw new Error(data.message||data.detail||data.error);
+    }
+    BEFORE={ pG:$('#pG').value, pR:$('#pR').value, pL:$('#pL').value, pV:$('#pV').value, vCounsel:$('#vCounsel').value };
+    const put=(id,v)=>{ if(v) $('#'+id).value=v; };
+    put('pG',data.prog_grammar); put('pR',data.prog_reading); put('pL',data.prog_listening); put('pV',data.prog_vocab);
+    put('vCounsel',data.counsel);
+    if(data.transcript){ $('#trText').textContent=data.transcript; $('#trBox').classList.remove('hide'); }
+    $('#carry').classList.add('hide'); DIRTY=true; drawCard();
+    const filled=['prog_grammar','prog_reading','prog_listening','prog_vocab','counsel'].filter(k=>data[k]).length;
+    vmsg(filled?`${filled}개 칸을 채웠습니다. 확인하고 고쳐주세요.`:'내용을 찾지 못했습니다. 다시 말씀해 주세요.', filled?'':'err');
+    if(filled) showUndo();
+  }catch(e){
+    vmsg('실패: '+e.message,'err');
+  }finally{ $('#btnRec').disabled=false; }
+}
+function showUndo(){
+  const e=$('#voiceMsg');
+  const b=document.createElement('button');
+  b.textContent='되돌리기'; b.style.cssText='margin-left:10px;background:#fff;border:1.5px solid #bfe3d0;color:var(--sent);font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:7px';
+  b.onclick=()=>{ if(!BEFORE) return; Object.entries(BEFORE).forEach(([k,v])=>$('#'+k).value=v); drawCard(); vmsg('되돌렸습니다'); };
+  e.append(b);
+}
+
+/* ==================== 여러 명 한 번에 ==================== */
+let MREC=null, MCH=[], MT=null, MSEC=0, MRES=[], MROSTER=[];
+function mvmsg(t,cls){ const e=$('#mvMsg'); if(!t){ e.className='voiceMsg hide'; return; } e.className='voiceMsg'+(cls?' '+cls:''); e.textContent=t; }
+function mRecUI(on){
+  $('#mBtnRec').classList.toggle('on',on);
+  $('#mRecLabel').textContent=on?'녹음 끝내기':'녹음 시작';
+  $('#mRecHint').innerHTML=on?'다 말씀하셨으면 끝내기를 누르세요':`담당 학생 <b>${MROSTER.length}</b>명 중에서 찾습니다`;
+}
+$('#chipVoice').onclick=()=>{
+  MROSTER=scoped().filter(r=>r.students).map(r=>({ id:r.student_id, rid:r.id, name:r.students.name,
+    school:r.students.school, grade:r.students.grade, status:r.status }));
+  if(!MROSTER.length){ toast('먼저 학생을 등록해 주세요'); return; }
+  $('#mRosterN').textContent=MROSTER.length;
+  mvReset(); $('#mv').classList.remove('hide');
+};
+function mvReset(){
+  mStopRec(); MRES=[]; MSEC=0; $('#mRecTime').textContent='0:00'; mvmsg('');
+  $('#mvResult').innerHTML=''; $('#mvTrBox').classList.add('hide');
+  $('#mvEx').classList.remove('hide'); $('#mvFoot').classList.add('hide'); mRecUI(false);
+}
+$('#mvClose').onclick=()=>{ mStopRec(); $('#mv').classList.add('hide'); };
+$('#mvRedo').onclick=mvReset;
+
+$('#mBtnRec').onclick=async()=>{
+  if(MREC && MREC.state==='recording'){ mStopRec(); return; }
+  if(!navigator.mediaDevices || !window.MediaRecorder){ mvmsg('이 브라우저는 녹음을 지원하지 않습니다.','err'); return; }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({ audio:true });
+    const mime=pickMime();
+    MREC=new MediaRecorder(stream, mime?{ mimeType:mime }:undefined);
+    MCH=[]; MSEC=0; $('#mRecTime').textContent='0:00'; mvmsg(''); $('#mvResult').innerHTML='';
+    $('#mvFoot').classList.add('hide'); $('#mvEx').classList.remove('hide');
+    MREC.ondataavailable=e=>{ if(e.data && e.data.size) MCH.push(e.data); };
+    MREC.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop()); clearInterval(MT); mRecUI(false);
+      const blob=new Blob(MCH,{ type:MREC.mimeType||'audio/webm' });
+      if(blob.size<1200){ mvmsg('녹음이 너무 짧습니다. 다시 눌러주세요.','err'); return; }
+      await sendMulti(blob);
+    };
+    MREC.start(); mRecUI(true);
+    MT=setInterval(()=>{ MSEC++; $('#mRecTime').textContent=Math.floor(MSEC/60)+':'+String(MSEC%60).padStart(2,'0');
+      if(MSEC>=600) mStopRec(); },1000);
+  }catch(e){
+    mvmsg(e.name==='NotAllowedError'?'마이크 사용이 차단돼 있습니다. 주소창의 자물쇠에서 마이크를 허용해 주세요.':'마이크를 열 수 없습니다: '+e.message,'err');
+  }
+};
+function mStopRec(){ try{ MREC && MREC.state==='recording' && MREC.stop(); }catch{} clearInterval(MT); }
+
+async function sendMulti(blob){
+  $('#mBtnRec').disabled=true; $('#mvEx').classList.add('hide');
+  mvmsg('정리하는 중입니다… 학생 수에 따라 30초쯤 걸립니다','work');
+  try{
+    const b64=await blobToB64(blob);
+    const { data, error }=await sb.functions.invoke('voice-parse',{
+      body:{ mode:'multi', audio:b64, mime:(blob.type||'audio/webm').split(';')[0],
+             roster:MROSTER.map(r=>({ name:r.name, school:r.school, grade:r.grade })) }
+    });
+    if(error) throw new Error(error.message||'요청 실패');
+    if(data?.error){
+      if(data.error==='NO_KEY') throw new Error('Gemini 키가 아직 등록되지 않았습니다. J님께 문의해 주세요.');
+      throw new Error(data.message||data.detail||data.error);
+    }
+    if(data.transcript){ $('#mvTrText').textContent=data.transcript; $('#mvTrBox').classList.remove('hide'); }
+    MRES=(data.students||[]).map(s=>({ ...s, sid:(MROSTER.find(r=>r.name===s.roster_name)||{}).id||null }));
+    if(!MRES.length){ mvmsg('학생을 찾지 못했습니다. 이름을 부르면서 다시 말씀해 주세요.','err'); return; }
+    renderMulti();
+  }catch(e){ mvmsg('실패: '+e.message,'err'); }
+  finally{ $('#mBtnRec').disabled=false; }
+}
+
+function renderMulti(){
+  const matched=MRES.filter(r=>r.sid).length;
+  mvmsg(`${MRES.length}명을 정리했습니다${matched<MRES.length?` · ${MRES.length-matched}명은 이름을 못 찾았습니다`:''}. 확인하고 적용하세요.`, matched<MRES.length?'work':'');
+  $('#mvResult').innerHTML=MRES.map((r,i)=>{
+    const row=MROSTER.find(x=>x.id===r.sid);
+    const P=[['문법',r.prog_grammar],['독해',r.prog_reading],['듣기',r.prog_listening],['단어시험',r.prog_vocab]].filter(x=>x[1]);
+    const sent=row && row.status==='sent';
+    const on=!!r.sid && !sent;
+    const opts=MROSTER.map(x=>`<option value="${x.id}"${x.id===r.sid?' selected':''}>${esc(x.name)}${x.school?' · '+esc(x.school):''}</option>`).join('');
+    return `<div class="sres ${on?'':'off'} ${r.sid?'':'bad'}" id="sr${i}">
+      <div class="srh">
+        <input type="checkbox" data-ck="${i}"${on?' checked':''}${r.sid?'':' disabled'}>
+        <div>
+          <b>${esc(row?row.name:r.spoken_name)}</b>
+          <span class="meta"> ${row?[row.school,row.grade].filter(Boolean).map(esc).join(' · '):'명단에 없는 이름'}</span>
+        </div>
+        ${sent?'<span class="warn">이미 발송됨</span>':''}
+      </div>
+      <div class="srb">
+        ${P.length?`<dl>${P.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`:''}
+        ${r.counsel?`<div class="cs">${esc(r.counsel)}</div>`:''}
+        ${r.sid?'':`<select data-pick="${i}"><option value="">— 이 학생이 누구인지 골라주세요 —</option>${opts}</select>`}
+      </div></div>`;
+  }).join('');
+  $$('#mvResult [data-ck]').forEach(c=>c.onchange=()=>{
+    $('#sr'+c.dataset.ck).classList.toggle('off',!c.checked); countApply(); });
+  $$('#mvResult [data-pick]').forEach(s=>s.onchange=()=>{
+    const i=+s.dataset.pick; MRES[i].sid=s.value||null; renderMulti(); });
+  $('#mvFoot').classList.remove('hide'); countApply();
+}
+function countApply(){
+  const n=$$('#mvResult [data-ck]').filter(c=>c.checked).length;
+  $('#mvApply').textContent=n?`${n}명 적용하기`:'적용할 학생을 선택하세요';
+  $('#mvApply').disabled=!n;
+}
+
+$('#mvApply').onclick=async()=>{
+  const picks=$$('#mvResult [data-ck]').filter(c=>c.checked).map(c=>MRES[+c.dataset.ck]).filter(r=>r.sid);
+  if(!picks.length) return;
+  $('#mvApply').disabled=true; $('#mvApply').textContent='저장하는 중…';
+  let ok=0, fail=0;
+  for(const r of picks){
+    const rec=ROWS.find(x=>x.student_id===r.sid);
+    if(!rec){ fail++; continue; }
+    const f={ prog_grammar:r.prog_grammar||rec.prog_grammar||null,
+              prog_reading:r.prog_reading||rec.prog_reading||null,
+              prog_listening:r.prog_listening||rec.prog_listening||null,
+              prog_vocab:r.prog_vocab||rec.prog_vocab||null,
+              counsel:r.counsel||rec.counsel||null };
+    const payload={ ...f, message:buildTextFor(rec,f,rec.teachers?.name||ME.name),
+                    status:'drafted', drafted_at:new Date().toISOString() };
+    const { data, error }=await sb.from('feedback_records').update(payload).eq('id',rec.id).select(SEL).single();
+    if(error){ fail++; continue; }
+    const i=ROWS.findIndex(x=>x.id===rec.id); if(i>=0) ROWS[i]=data; ok++;
+  }
+  render();
+  $('#mv').classList.add('hide');
+  toast(fail?`${ok}명 적용 · ${fail}명 실패`:`${ok}명 적용했습니다. 카드를 열어 확인해 주세요`);
+};
+
 /* ==================== 문구(텍스트판) ==================== */
-function buildText(){
-  if(!CUR) return ''; const s=CUR.students, f=fields(), [,mm]=PERIOD.split('-');
+function buildText(){ return CUR ? buildTextFor(CUR, fields(), teacherName()) : ''; }
+function buildTextFor(rec, f, tname){
+  const CUR=rec; const s=rec.students, [,mm]=PERIOD.split('-');
+  const teacherName=()=>tname||'';
   const L=[`안녕하세요, ${ACADEMY.name}입니다.`, `${s.name} 학생 ${+mm}월 학습 리포트 보내드립니다.`, ''];
   const P=progressItems(f);
   if(P.length){ L.push('■ 이번 달 진도');
