@@ -416,6 +416,21 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
 .hist-b dt{font-size:11px;font-weight:700;color:var(--accent-deep);background:var(--accent-soft);border-radius:7px;padding:3px 0;text-align:center;align-self:start}
 .hist-b dd{margin:0;color:var(--ink)}
 .hist-b .cs{margin-top:12px;padding-top:12px;border-top:1px solid var(--sep);white-space:pre-wrap;color:var(--ink2)}
+.polishRow{display:flex;align-items:center;gap:9px;margin-top:9px;flex-wrap:wrap}
+.polishBtn{
+  display:inline-flex;align-items:center;gap:7px;border:1px solid var(--sep);background:var(--fill);
+  color:var(--accent-deep);font:inherit;font-size:12.5px;font-weight:700;letter-spacing:-.02em;
+  padding:8px 13px;border-radius:var(--r-ctl);cursor:pointer;transition:background .18s ease;
+}
+.polishBtn:hover{background:var(--fill2)}
+.polishBtn:disabled{opacity:.5;cursor:default}
+.polishBtn svg{width:14px;height:14px;display:block}
+.polishNote{font-size:11.5px;color:var(--ink3);line-height:1.55}
+.chg{margin-top:10px;background:var(--fill);border-radius:var(--r-ctl);padding:11px 14px;font-size:12px;color:var(--ink2);line-height:1.7}
+.chg b{display:block;font-size:11px;color:var(--ink3);font-weight:700;letter-spacing:.03em;margin-bottom:5px}
+.chg ul{margin:0;padding-left:16px}
+.delv{margin-top:9px;width:100%;padding:9px;border-radius:var(--r-ctl);background:transparent;border:1px solid var(--sep);font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer}
+.delv:hover{border-color:var(--red);color:var(--red);background:var(--red-soft)}
 .loadv{margin-top:14px;width:100%;padding:10px;border-radius:var(--r-ctl);background:var(--fill);border:1px solid var(--sep);font-size:12.5px;font-weight:700;color:var(--accent-deep)}
 .loadv:hover{background:var(--accent-soft)}
 
@@ -539,7 +554,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <span class="ver" id="ver" title="화면 버전">v17</span>
+      <span class="ver" id="ver" title="화면 버전">v18</span>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="linkbtn" id="btnAdmin">학생 관리</button>
       <button class="linkbtn" id="btnOut">로그아웃</button>
@@ -613,6 +628,12 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
     <div class="sec">
       <h3>학부모 상담 · 피드백</h3>
       <textarea class="ta" id="vCounsel" placeholder="이번 달 수업에서 본 것, 잘한 점, 집에서 봐주시면 좋을 점을 편하게 적어주세요. 줄바꿈 그대로 카드에 들어갑니다."></textarea>
+      <div class="polishRow">
+        <button class="polishBtn" id="btnPolish" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3v4M3 5h4M6 17v4m-2-2h4"/><path d="M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5L13 3z"/></svg>학부모 톤으로 다듬기</button>
+        <span class="polishNote">있는 그대로 두되, 학부모가 방어적으로 읽지 않게 표현만 바꿉니다.</span>
+      </div>
+      <div class="voiceMsg hide" id="polishMsg"></div>
+      <div class="chg hide" id="chgBox"></div>
       <p class="hint">쓰는 대로 아래 카드에 바로 반영됩니다.</p>
     </div>
     <div class="sec">
@@ -900,6 +921,7 @@ function open(id){
   $('#btnSent').textContent='발송 완료';
   stamp();
   stopRec(); vmsg(''); $('#trBox').classList.add('hide'); $('#recTime').textContent='0:00'; BEFORE=null;
+  pmsg(''); $('#chgBox').classList.add('hide'); PBEFORE=null;
   $('#histWrap').innerHTML='<p class="hint" style="margin:0">불러오는 중…</p>'; $('#histCnt').textContent='';
   DIRTY=false; drawCard(); loadHistory();
   $('#drawer').classList.add('on'); $('#scrim').classList.add('on'); document.body.style.overflow='hidden';
@@ -1111,6 +1133,44 @@ function showUndo(){
   b.onclick=()=>{ if(!BEFORE) return; Object.entries(BEFORE).forEach(([k,v])=>$('#'+k).value=v); drawCard(); vmsg('되돌렸습니다'); };
   e.append(b);
 }
+
+/* ==================== 학부모 톤으로 다듬기 ==================== */
+let PBEFORE=null;
+function pmsg(t,cls){ const e=$('#polishMsg'); if(!t){ e.className='voiceMsg hide'; return; }
+  e.className='voiceMsg'+(cls?' '+cls:''); e.textContent=t; }
+$('#btnPolish').onclick=async()=>{
+  const ta=$('#vCounsel'); const draft=(ta.value||'').trim();
+  if(!draft){ pmsg('먼저 피드백을 적어 주세요. 짧아도 괜찮습니다.','err'); return; }
+  const btn=$('#btnPolish'); btn.disabled=true;
+  $('#chgBox').classList.add('hide');
+  pmsg('다듬는 중입니다… 10초쯤 걸립니다','work');
+  try{
+    const { data, error }=await sb.functions.invoke('feedback-polish',{
+      body:{ text:draft, name:CUR?.students?.name||'' }
+    });
+    if(error) throw new Error(error.message||'요청 실패');
+    if(data?.error){
+      if(data.error==='NO_KEY') throw new Error('Gemini 키가 아직 등록되지 않았습니다. J님께 문의해 주세요.');
+      throw new Error(data.message||data.detail||data.error);
+    }
+    if(!data?.counsel) throw new Error('결과가 비어 있습니다');
+    PBEFORE=draft;
+    ta.value=data.counsel; DIRTY=true; drawCard();
+    const ch=(data.changes||[]).filter(Boolean);
+    if(ch.length){
+      $('#chgBox').innerHTML='<b>이렇게 바꿨습니다</b><ul>'+ch.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>';
+      $('#chgBox').classList.remove('hide');
+    }
+    pmsg('다듬었습니다. 사실이 맞는지 꼭 확인해 주세요.');
+    const b=document.createElement('button');
+    b.type='button'; b.textContent='되돌리기';
+    b.style.cssText='margin-left:10px;background:var(--surface-solid);border:1px solid var(--sep);color:var(--ink2);font:inherit;font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:7px;cursor:pointer';
+    b.onclick=()=>{ if(PBEFORE==null) return; ta.value=PBEFORE; DIRTY=true; drawCard();
+      $('#chgBox').classList.add('hide'); pmsg('되돌렸습니다'); };
+    $('#polishMsg').append(b);
+  }catch(e){ pmsg('실패: '+e.message,'err'); }
+  finally{ btn.disabled=false; }
+};
 
 /* ==================== 여러 명 한 번에 ==================== */
 let MREC=null, MCH=[], MT=null, MSEC=0, MRES=[], MROSTER=[];
@@ -1455,11 +1515,22 @@ async function loadHistory(){
         ${P.length?`<dl>${P.map(([k,v2])=>`<dt>${k}</dt><dd>${esc(v2)}</dd>`).join('')}</dl>`:''}
         ${r.counsel?`<div class="cs">${esc(r.counsel)}</div>`:''}
         <button class="loadv" data-l="${i}">${r.period===PERIOD?'이 내용 불러와서 고치기':`이 내용 가져와서 ${ymLabel(PERIOD)}에 쓰기`}</button>
+        ${ME.role==='director'?`<button class="delv" data-d="${i}">이 기록 삭제</button>`:''}
       </div></div>`;
   }).join('');
   $$('#histWrap .hist-t').forEach(t=>t.onclick=()=>{
     const body=$('#hb'+t.dataset.h); const op=!body.classList.contains('hide');
     body.classList.toggle('hide',op); t.querySelector('.ar').textContent=op?'▾':'▴';
+  });
+  $$('#histWrap .delv').forEach(b=>b.onclick=async()=>{
+    const r=LOGS[+b.dataset.d];
+    const label=`${ymLabel(r.period)}${r.version>1?' '+r.version+'차 수정':''} 기록`;
+    if(!confirm(`${CUR?.students?.name||''} 학생의 ${label}을 삭제합니다.\n\n목록에서 사라지고 되돌릴 수 없습니다.\n(누가 언제 무엇을 지웠는지는 따로 남습니다)`)) return;
+    b.disabled=true; b.textContent='삭제하는 중…';
+    const { error }=await sb.from('feedback_logs').delete().eq('id', r.id);
+    if(error){ b.disabled=false; b.textContent='이 기록 삭제'; toast('삭제하지 못했습니다: '+error.message); return; }
+    await loadHistory();
+    toast(`${label}을 삭제했습니다`);
   });
   $$('#histWrap .loadv').forEach(b=>b.onclick=()=>{
     const r=LOGS[+b.dataset.l];
