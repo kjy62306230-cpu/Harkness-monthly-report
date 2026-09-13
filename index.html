@@ -531,7 +531,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <span class="ver" id="ver" title="화면 버전">v15</span>
+      <span class="ver" id="ver" title="화면 버전">v16</span>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="linkbtn" id="btnAdmin">학생 관리</button>
       <button class="linkbtn" id="btnOut">로그아웃</button>
@@ -907,6 +907,7 @@ const KOU='(?:강|과|단원|차시|유닛|일차|챕터|쪽|페이지|번|문�
 const RANGE_KO2=new RegExp('(\\d+)\\s*'+KOU+'?\\s*(?:[~\\-–—]|에서|부터)\\s*(\\d+)\\s*('+KOU+')');
 const RANGE_KO=new RegExp('(\\d+)\\s*('+KOU+')');
 const COUNT_RE=/(\d+)\s*(회|편|세트)/;
+const BOOKWORD=/(모의고사|문제집|워크북|기출|교과서|부교재|실전|파이널|봉투|학습지|프린트|독해집|듣기집|단어장|어휘집)/;
 const S_FRAC=/(평균\s*)?(\d+)\s*\/\s*(\d+)/, S_AVG=/평균\s*(\d+(?:\.\d+)?)\s*(점|%)?/, S_PT=/(\d+(?:\.\d+)?)\s*(점|%)/;
 const normKw=k=>{ k=k.toLowerCase(); return ({ch:'CH',chapter:'CH','챕터':'CH',unit:'Unit',day:'Day',lesson:'Lesson',week:'Week',part:'Part',step:'Step',level:'Level',lv:'Level',test:'Test',mock:'Mock'})[k]||k; };
 const cleanT=t=>{
@@ -919,7 +920,8 @@ const cleanT=t=>{
 const cut=(s,m,rep=' ')=>s.slice(0,m.index)+rep+s.slice(m.index+m[0].length);
 function hasRangeish(t){ return RANGE_KW.test(t) || RANGE_KO2.test(t) || RANGE_KO.test(t) || COUNT_RE.test(t); }
 function looksLikeBook(t){
-  if(!t || !hasRangeish(t)) return false;
+  if(!t) return false;
+  if(!hasRangeish(t)) return BOOKWORD.test(t) && t.replace(/[\s·,.\-–—()§]/g,'').length>=3;
   const bare=t.replace(RANGE_KW,' ').replace(RANGE_KO2,' ').replace(RANGE_KO,' ').replace(COUNT_RE,' ')
               .replace(/[\s·,.\-–—()§]/g,'');
   return bare.length>=2;            // 범위/횟수 빼고도 교재 이름이 남아야 별도 교재
@@ -949,8 +951,19 @@ function parseOne(s,label){
   if(!book) book=label||'';
   return { item:{ book, range, topic }, leftover:cleanT(leftover) };
 }
+function splitComma(c){
+  const parts=c.split(/\s*[,，]\s*/).map(x=>x.trim()).filter(Boolean);
+  if(parts.length<2) return [c];
+  const out=[parts[0]];
+  for(let i=1;i<parts.length;i++){
+    if(looksLikeBook(parts[i])) out.push(parts[i]);
+    else out[out.length-1]+=', '+parts[i];   // 단원 나열은 앞 교재에 붙인다
+  }
+  return out;
+}
 function parseProgress(raw,label){
-  const chunks=String(raw||'').split(/\s*(?:\n|;|\|)\s*|\s+\/\s+/).map(s=>s.trim()).filter(Boolean);
+  const chunks=String(raw||'').split(/\s*(?:\n|;|\|)\s*|\s+\/\s+/).map(s=>s.trim()).filter(Boolean)
+                 .flatMap(splitComma);
   const out=[];
   for(const c of chunks){
     let cur=c,guard=0;
