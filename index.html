@@ -361,6 +361,14 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
 .recInfo{display:flex;flex-direction:column;gap:2px;min-width:0}
 #recTime,#mRecTime{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);letter-spacing:-.02em}
 #recHint,#mRecHint{font-size:11.5px;color:var(--ink3);line-height:1.45}
+.vmode{display:flex;gap:2px;margin-top:11px;background:var(--fill);padding:2px;border-radius:10px}
+.vmode button{
+  flex:1;border:0;background:transparent;color:var(--ink3);font:inherit;font-size:12.5px;font-weight:600;
+  padding:7px 10px;border-radius:8px;cursor:pointer;letter-spacing:-.02em;
+  transition:background .18s ease,color .18s ease;
+}
+.vmode button.on{background:var(--surface-solid);color:var(--ink);font-weight:700;box-shadow:0 .5px 1px rgba(16,20,40,.06),0 2px 6px -2px rgba(16,20,40,.18)}
+.vmodeHint{margin-top:7px;font-size:11.5px;color:var(--ink3);line-height:1.5}
 .voiceMsg{margin-top:10px;font-size:12.5px;font-weight:600;padding:10px 13px;border-radius:var(--r-ctl);background:var(--green-soft);color:var(--green)}
 .voiceMsg.err{background:var(--red-soft);color:var(--red)}
 .voiceMsg.work{background:var(--amber-soft);color:var(--amber)}
@@ -531,7 +539,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <span class="ver" id="ver" title="화면 버전">v16</span>
+      <span class="ver" id="ver" title="화면 버전">v17</span>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="linkbtn" id="btnAdmin">학생 관리</button>
       <button class="linkbtn" id="btnOut">로그아웃</button>
@@ -583,6 +591,11 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
         <button class="recBtn" id="btnRec"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></span><span id="recLabel">녹음 시작</span></button>
         <div class="recInfo"><span id="recTime">0:00</span><span id="recHint">진도와 학생 이야기를 편하게 말씀하세요</span></div>
       </div>
+      <div class="vmode" id="vMode">
+        <button class="on" data-vm="merge" type="button">이어서 채우기</button>
+        <button data-vm="fresh" type="button">전부 새로</button>
+      </div>
+      <div class="vmodeHint" id="vModeHint">빈 칸만 채웁니다. 이미 적힌 칸에 새 내용이 나오면 뒤에 덧붙입니다.</div>
       <div class="voiceMsg hide" id="voiceMsg"></div>
       <details class="tr hide" id="trBox"><summary>받아쓴 내용 보기</summary><div id="trText"></div></details>
     </div>
@@ -637,6 +650,11 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
         <button class="recBtn" id="mBtnRec"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></span><span id="mRecLabel">녹음 시작</span></button>
         <div class="recInfo"><span id="mRecTime">0:00</span><span id="mRecHint">담당 학생 <b id="mRosterN">0</b>명 중에서 찾습니다</span></div>
       </div>
+      <div class="vmode" id="mMode">
+        <button class="on" data-mvm="merge" type="button">이어서 채우기</button>
+        <button data-mvm="fresh" type="button">전부 새로</button>
+      </div>
+      <div class="vmodeHint" id="mModeHint">빈 칸만 채웁니다. 이미 적힌 칸에 새 내용이 나오면 뒤에 덧붙입니다.</div>
       <div class="voiceMsg hide" id="mvMsg"></div>
 
       <div class="ex" id="mvEx">
@@ -978,6 +996,43 @@ function progressItems(f){
 
 /* ==================== 음성 -> 자동 정리 ==================== */
 let REC=null, CHUNKS=[], RECT=null, RECSEC=0, BEFORE=null;
+
+/* 이어서 녹음 — 이미 적힌 칸을 덮지 않고 채우거나 덧붙인다 */
+let VM='merge', MVM='merge';
+const SEP_P=' / ', SEP_C='\n\n';
+const HINT_MERGE='빈 칸만 채웁니다. 이미 적힌 칸에 새 내용이 나오면 뒤에 덧붙입니다.';
+const HINT_FRESH='말씀하신 칸을 통째로 새로 씁니다. 기존 내용은 지워집니다.';
+const nrm=v=>String(v||'').replace(/\s+/g,'').toLowerCase();
+function mergeVal(ov,nv,sep,mode){
+  ov=String(ov||'').trim(); nv=String(nv||'').trim();
+  if(!nv) return { v:ov, st:'keep' };
+  if(mode!=='merge') return { v:nv, st:(ov && nrm(ov)!==nrm(nv)) ? 'replace' : 'fill' };
+  if(!ov) return { v:nv, st:'fill' };
+  if(nrm(ov).includes(nrm(nv))) return { v:ov, st:'dup' };
+  return { v:ov+sep+nv, st:'add' };
+}
+function mergeReport(st){
+  const c=k=>Object.values(st).filter(x=>x===k).length;
+  const out=[];
+  if(c('fill')) out.push(`${c('fill')}개 칸을 채웠습니다`);
+  if(c('add'))  out.push(`${c('add')}개 칸에 이어 붙였습니다`);
+  if(c('replace')) out.push(`${c('replace')}개 칸을 새로 썼습니다`);
+  if(!out.length && c('dup')) out.push('이미 적혀 있는 내용이었습니다');
+  return out;
+}
+function bindMode(boxId,hintId,attr,set){
+  const box=document.getElementById(boxId); if(!box) return;
+  box.querySelectorAll('button').forEach(b=>{
+    b.onclick=()=>{
+      const v=b.dataset[attr];
+      set(v);
+      box.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+      document.getElementById(hintId).textContent = v==='merge' ? HINT_MERGE : HINT_FRESH;
+    };
+  });
+}
+bindMode('vMode','vModeHint','vm',v=>VM=v);
+bindMode('mMode','mModeHint','mvm',v=>MVM=v);
 function pickMime(){
   for(const m of ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/aac','audio/ogg']){
     if(window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
@@ -1034,14 +1089,17 @@ async function sendVoice(blob){
       throw new Error(data.message||data.detail||data.error);
     }
     BEFORE={ pG:$('#pG').value, pR:$('#pR').value, pL:$('#pL').value, pV:$('#pV').value, vCounsel:$('#vCounsel').value };
-    const put=(id,v)=>{ if(v) $('#'+id).value=v; };
-    put('pG',data.prog_grammar); put('pR',data.prog_reading); put('pL',data.prog_listening); put('pV',data.prog_vocab);
-    put('vCounsel',data.counsel);
+    const ST={};
+    [['pG','prog_grammar',SEP_P],['pR','prog_reading',SEP_P],['pL','prog_listening',SEP_P],
+     ['pV','prog_vocab',SEP_P],['vCounsel','counsel',SEP_C]].forEach(([id,k,sep])=>{
+      const r=mergeVal($('#'+id).value, data[k], sep, VM);
+      $('#'+id).value=r.v; ST[k]=r.st;
+    });
     if(data.transcript){ $('#trText').textContent=data.transcript; $('#trBox').classList.remove('hide'); }
     $('#carry').classList.add('hide'); DIRTY=true; drawCard();
-    const filled=['prog_grammar','prog_reading','prog_listening','prog_vocab','counsel'].filter(k=>data[k]).length;
-    vmsg(filled?`${filled}개 칸을 채웠습니다. 확인하고 고쳐주세요.`:'내용을 찾지 못했습니다. 다시 말씀해 주세요.', filled?'':'err');
-    if(filled) showUndo();
+    const rp=mergeReport(ST);
+    vmsg(rp.length?rp.join(' · ')+'. 확인하고 고쳐주세요.':'내용을 찾지 못했습니다. 다시 말씀해 주세요.', rp.length?'':'err');
+    if(rp.length) showUndo();
   }catch(e){
     vmsg('실패: '+e.message,'err');
   }finally{ $('#btnRec').disabled=false; }
@@ -1168,11 +1226,12 @@ $('#mvApply').onclick=async()=>{
   for(const r of picks){
     const rec=ROWS.find(x=>x.student_id===r.sid);
     if(!rec){ fail++; continue; }
-    const f={ prog_grammar:r.prog_grammar||rec.prog_grammar||null,
-              prog_reading:r.prog_reading||rec.prog_reading||null,
-              prog_listening:r.prog_listening||rec.prog_listening||null,
-              prog_vocab:r.prog_vocab||rec.prog_vocab||null,
-              counsel:r.counsel||rec.counsel||null };
+    const mv=(k,sep)=>mergeVal(rec[k], r[k], sep, MVM).v || null;
+    const f={ prog_grammar:mv('prog_grammar',SEP_P),
+              prog_reading:mv('prog_reading',SEP_P),
+              prog_listening:mv('prog_listening',SEP_P),
+              prog_vocab:mv('prog_vocab',SEP_P),
+              counsel:mv('counsel',SEP_C) };
     const payload={ ...f, message:buildTextFor(rec,f,rec.teachers?.name||ME.name),
                     status:'drafted', drafted_at:new Date().toISOString() };
     const { data, error }=await sb.from('feedback_records').update(payload).eq('id',rec.id).select(SEL).single();
