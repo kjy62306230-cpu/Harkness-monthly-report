@@ -198,7 +198,8 @@ header{
 .hwrap{max-width:1180px;margin:0 auto;padding:11px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .hlogo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15.5px;letter-spacing:-.03em;white-space:nowrap}
 .hlogo img{width:29px;height:29px}
-.who{font-size:12.5px;color:var(--ink3);margin-left:auto;display:flex;align-items:center;gap:9px}
+.who{font-size:12.5px;color:var(--ink3);margin-left:auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.who>*{white-space:nowrap;word-break:keep-all}
 .ver{font-size:10.5px;color:var(--ink3);opacity:.6;font-variant-numeric:tabular-nums;
   background:none;border:0;font-family:inherit;cursor:pointer;padding:2px 4px}
 .ver:hover{opacity:1;color:var(--accent-deep)}
@@ -530,6 +531,18 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
 
 /* ---------- 폰 ---------- */
 @media(max-width:700px){
+  /* 헤더 — 단어가 중간에서 잘리지 않게 */
+  .hwrap{padding:9px 14px 10px;gap:9px}
+  .hlogo{font-size:14.5px;gap:8px}
+  .hlogo img{width:26px;height:26px}
+  .who{width:100%;margin-left:0;justify-content:flex-start;gap:7px;flex-wrap:wrap;row-gap:7px}
+  .who>*{flex:0 0 auto}
+  .who #meName{font-weight:700;color:var(--ink2)}
+  .ver{order:99;margin-left:auto}
+  .linkbtn{font-size:12.5px;padding:5px 9px;border-radius:var(--r-pill);background:var(--fill)}
+  .guideBtn{padding:5px 10px}
+  .thBtn{padding:5px 9px}
+
   /* 시트가 아래에서 올라온다 */
   .drawer{
     top:auto;left:0;right:0;width:100%;height:93dvh;
@@ -618,7 +631,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v28</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v29</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -844,7 +857,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v28';
+const APP_VER = 'v29';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1951,7 +1964,24 @@ $('#btnReg').onclick=async()=>{
   const dir=ME.role==='director';
   const rows=$$('#reg .reg-r').map(r=>{ const g=f=>r.querySelector(`[data-f="${f}"]`); return { name:g('name').value.trim(), school:g('school').value.trim()||null, grade:g('grade').value.trim()||null, teacher_id: dir?(g('teacher').value||null):ME.id, status:'active' }; }).filter(r=>r.name);
   if(!rows.length){ $('#regMsg').textContent='이름을 적어주세요.'; return; }
+
+  // 같은 학생을 두 번 넣는 사고 방지
+  const key=r=>[r.name,r.school||'',r.grade||''].map(x=>String(x).replace(/\s/g,'')).join('|');
+  const seen=new Set(); const selfDup=[];
+  rows.forEach(r=>{ const k=key(r); if(seen.has(k)) selfDup.push(r.name); else seen.add(k); });
+  const { data:exist }=await sb.from('students').select('name,school,grade').eq('status','active');
+  const have=new Set((exist||[]).map(key));
+  const already=rows.filter(r=>have.has(key(r))).map(r=>r.name);
+  const dups=[...new Set([...selfDup,...already])];
+  if(dups.length){
+    const ok=confirm('이미 등록된 학생이 있습니다.\n\n'+dups.join(' · ')+
+      '\n\n그래도 추가하시겠습니까?\n(동명이인이 아니라면 [취소]를 누르세요)');
+    if(!ok){ $('#regMsg').textContent='등록을 취소했습니다. 중복된 이름을 지우고 다시 해주세요.'; return; }
+  }
+
+  $('#btnReg').disabled=true;
   const { error }=await sb.from('students').insert(rows);
+  $('#btnReg').disabled=false;
   if(error){ $('#regMsg').textContent='실패: '+error.message; return; }
   $('#regMsg').textContent=`${rows.length}명 등록됐습니다.`; toast(`${rows.length}명 등록`);
   $$('#reg .reg-r').forEach(r=>r.remove()); addRow(); addRow(); addRow();
