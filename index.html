@@ -557,7 +557,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <span class="ver" id="ver" title="화면 버전">v20</span>
+      <span class="ver" id="ver" title="화면 버전">v21</span>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="linkbtn" id="btnAdmin">학생 관리</button>
       <button class="linkbtn" id="btnOut">로그아웃</button>
@@ -713,6 +713,18 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
       <div class="sec">
         <h3>학생 등록</h3>
         <p class="hint" style="margin:0 0 8px">한 줄에 한 명. <b>이름 · 학교 · 학년 · 담당선생님</b> 순서로 적고 <b>[등록하기]</b>. 여러 명이면 <b>[＋ 등록칸 추가]</b>.</p>
+        <div class="rec" style="margin-bottom:12px">
+          <button class="recBtn" id="sBtnRec" type="button"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></span><span id="sRecLabel">말로 등록</span></button>
+          <div class="recInfo"><span id="sRecTime">0:00</span><span id="sRecHint">이름 · 학교 · 학년 · 담당선생님을 이어서 말씀하세요</span></div>
+        </div>
+        <div class="ex" id="sEx" style="margin-bottom:12px">
+          <b>이렇게 말씀하시면 됩니다</b>
+          <p>“김민서 여명중학교 2학년 Jack 선생님이 맡고,
+          박지훈이도 같은 학교 같은 학년인데 얘는 제가 맡을게요.
+          그리고 이서연 사직고 1학년.”</p>
+        </div>
+        <div class="voiceMsg hide" id="sMsg"></div>
+        <details class="tr hide" id="sTrBox" style="margin-bottom:12px"><summary>받아쓴 내용 보기</summary><div id="sTrText"></div></details>
         <div class="reg" id="reg">
           <div class="reg-h"><span>이름 *</span><span>학교</span><span>학년</span><span>담당선생님</span><span></span></div>
         </div>
@@ -1601,6 +1613,8 @@ async function drawAdmin(){
   $('#aSub').textContent=dir?'선생님 권한 · 학생 등록 · 담당 배정':'내 학생 등록 · 재원 상태';
   const { data:ts }=await sb.from('teachers').select('*').eq('active',true).order('name'); TEACHERS=ts||[];
   if(!$$('#reg .reg-r').length){ addRow(); addRow(); addRow(); } else $$('#reg .reg-r select').forEach(refillTeacherSel);
+  try{ sStopRec(); smsg(''); $('#sTrBox').classList.add('hide'); $('#sEx').classList.remove('hide');
+       $('#sRecTime').textContent='0:00'; sRecUI(false); $('#sBtnRec').disabled=false; }catch(e){}
   if(dir){
     const { data:allT }=await sb.from('teachers').select('*').order('name');
     $('#tTeachers').innerHTML='<tr><th>이름</th><th style="width:110px">권한</th><th style="width:90px">활성</th></tr>'+(allT||[]).map(t=>{ const me=t.id===ME.id; return `<tr>
@@ -1639,6 +1653,74 @@ function addRow(){
   $('#reg').append(r); return r;
 }
 $('#btnRowAdd').onclick=()=>{ addRow().querySelector('input').focus(); };
+
+/* ---------- 말로 학생 등록 ---------- */
+let SREC=null, SCH=[], STIM=null, SSEC=0;
+function smsg(t,cls){ const e=$('#sMsg'); if(!t){ e.className='voiceMsg hide'; return; }
+  e.className='voiceMsg'+(cls?' '+cls:''); e.textContent=t; }
+function sRecUI(on){
+  $('#sBtnRec').classList.toggle('on',on);
+  $('#sRecLabel').textContent=on?'녹음 끝내기':'말로 등록';
+  $('#sRecHint').textContent=on?'다 말씀하셨으면 끝내기를 누르세요':'이름 · 학교 · 학년 · 담당선생님을 이어서 말씀하세요';
+}
+function sStopRec(){ try{ SREC && SREC.state==='recording' && SREC.stop(); }catch(e){} clearInterval(STIM); }
+function fillRegRows(list){
+  const blanks=$$('#reg .reg-r').filter(r=>!r.querySelector('[data-f="name"]').value.trim());
+  let n=0;
+  list.forEach((st,i)=>{
+    const r=blanks[i]||addRow();
+    const set=(f,v)=>{ const el=r.querySelector(`[data-f="${f}"]`); if(el && v) el.value=v; };
+    set('name',st.name); set('school',st.school); set('grade',st.grade);
+    const sel=r.querySelector('select[data-f="teacher"]');
+    if(sel && st.teacher_name){ const t=TEACHERS.find(x=>x.name===st.teacher_name); if(t) sel.value=t.id; }
+    n++;
+  });
+  return n;
+}
+async function sendStudents(blob){
+  $('#sBtnRec').disabled=true; $('#sEx').classList.add('hide');
+  smsg('정리하는 중입니다… 20초쯤 걸립니다','work');
+  try{
+    const b64=await blobToB64(blob);
+    const { data, error }=await sb.functions.invoke('student-parse',{
+      body:{ audio:b64, mime:(blob.type||'audio/webm').split(';')[0],
+             teachers:TEACHERS.map(t=>t.name),
+             existing:ROWS.filter(r=>r.students).map(r=>r.students.name) }
+    });
+    if(error) throw new Error(error.message||'요청 실패');
+    if(data?.error){
+      if(data.error==='NO_KEY') throw new Error('Gemini 키가 아직 등록되지 않았습니다. J님께 문의해 주세요.');
+      throw new Error(data.message||data.detail||data.error);
+    }
+    if(data.transcript){ $('#sTrText').textContent=data.transcript; $('#sTrBox').classList.remove('hide'); }
+    const list=data.students||[];
+    if(!list.length){ smsg('학생을 찾지 못했습니다. 이름부터 또박또박 말씀해 주세요.','err'); $('#sEx').classList.remove('hide'); return; }
+    const n=fillRegRows(list);
+    const noT=list.filter(x=>!x.teacher_name).length;
+    smsg(`${n}명을 칸에 넣었습니다. 확인하고 [등록하기]를 누르세요.`+(noT?` (담당선생님 ${noT}명은 못 찾았습니다)`:''));
+  }catch(e){ smsg('실패: '+e.message,'err'); $('#sEx').classList.remove('hide'); }
+  finally{ $('#sBtnRec').disabled=false; }
+}
+$('#sBtnRec').onclick=async()=>{
+  if(SREC && SREC.state==='recording'){ sStopRec(); return; }
+  if(!navigator.mediaDevices || !window.MediaRecorder){ smsg('이 브라우저는 녹음을 지원하지 않습니다.','err'); return; }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({ audio:true });
+    const mime=pickMime();
+    SREC=new MediaRecorder(stream, mime?{ mimeType:mime }:undefined);
+    SCH=[]; SSEC=0; $('#sRecTime').textContent='0:00'; smsg(''); $('#sTrBox').classList.add('hide');
+    SREC.ondataavailable=e=>{ if(e.data && e.data.size) SCH.push(e.data); };
+    SREC.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop()); clearInterval(STIM); sRecUI(false);
+      const blob=new Blob(SCH,{ type:SREC.mimeType||'audio/webm' });
+      if(blob.size<1200){ smsg('녹음이 너무 짧습니다. 다시 눌러주세요.','err'); return; }
+      await sendStudents(blob);
+    };
+    SREC.start(); sRecUI(true);
+    STIM=setInterval(()=>{ SSEC++; $('#sRecTime').textContent=Math.floor(SSEC/60)+':'+String(SSEC%60).padStart(2,'0');
+      if(SSEC>=180) sStopRec(); },1000);
+  }catch(e){ smsg('마이크를 쓸 수 없습니다. 권한을 확인해 주세요.','err'); }
+};
 $('#btnReg').onclick=async()=>{
   const dir=ME.role==='director';
   const rows=$$('#reg .reg-r').map(r=>{ const g=f=>r.querySelector(`[data-f="${f}"]`); return { name:g('name').value.trim(), school:g('school').value.trim()||null, grade:g('grade').value.trim()||null, teacher_id: dir?(g('teacher').value||null):ME.id, status:'active' }; }).filter(r=>r.name);
