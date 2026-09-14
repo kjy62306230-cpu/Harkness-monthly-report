@@ -500,8 +500,9 @@ td{padding:9px 12px;border-bottom:1px solid var(--sep)}
 tr:last-child td{border-bottom:none}
 td select,td input{padding:6px 8px;border:1px solid var(--sep);border-radius:8px;background:var(--fill);outline:none;width:100%}
 td select:focus,td input:focus{border-color:var(--accent);background:var(--surface-solid)}
-.del{width:29px;height:29px;border-radius:50%;color:var(--ink3);font-size:13px}
-.del:hover{background:var(--red-soft);color:var(--red)}
+.del{width:32px;height:32px;border-radius:50%;color:var(--ink3);font-size:13px;font-weight:800;
+  background:var(--fill);border:1px solid var(--sep);cursor:pointer;flex:0 0 auto}
+.del:hover,.del:active{background:var(--red-soft);color:var(--red);border-color:transparent}
 
 /* 학생 등록 */
 .reg{display:flex;flex-direction:column;gap:6px}
@@ -545,6 +546,38 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   .linkbtn{font-size:12.5px;padding:5px 9px;border-radius:var(--r-pill);background:var(--fill)}
   .guideBtn{padding:5px 10px}
   .thBtn{padding:5px 9px}
+
+  /* 학생 명단 — 폰에서는 표 대신 카드로 (오른쪽 ✕ 가 잘리던 문제) */
+  #tStudents{display:block;border:0;background:none;border-radius:0;overflow:visible}
+  #tStudents tr:first-child{display:none}
+  #tStudents tr{
+    display:grid;grid-template-columns:1fr 40px;gap:9px 10px;align-items:center;
+    background:var(--surface-solid);border:1px solid var(--sep);border-radius:var(--r-card);
+    padding:13px 14px;margin-bottom:8px;
+  }
+  #tStudents td{border:0;padding:0}
+  #tStudents td:first-child{grid-area:1/1;font-size:15.5px}
+  #tStudents td:last-child{grid-area:1/2;width:auto!important;text-align:right}
+  #tStudents td:nth-child(2){grid-area:2/1/auto/span 2}
+  #tStudents td:nth-child(n+3):not(:last-child){grid-column:1/span 2}
+  #tStudents td select{font-size:14px;padding:9px 10px}
+
+  /* 선생님 표도 같은 원리로 */
+  #tTeachers{display:block;border:0;background:none;overflow:visible}
+  #tTeachers tr:first-child{display:none}
+  #tTeachers tr{display:grid;grid-template-columns:1fr 1fr;gap:9px 10px;align-items:center;
+    background:var(--surface-solid);border:1px solid var(--sep);border-radius:var(--r-card);
+    padding:13px 14px;margin-bottom:8px}
+  #tTeachers td{border:0;padding:0}
+  #tTeachers td:first-child{grid-column:1/span 2}
+
+  /* 등록칸도 한 줄에 억지로 넣지 않기 */
+  .reg-h{display:none}
+  .reg-r{grid-template-columns:1fr 1fr;gap:7px;padding:12px;background:var(--surface-solid);
+    border:1px solid var(--sep);border-radius:var(--r-card);margin-bottom:8px}
+  .reg-r input[data-f="name"]{grid-column:1/span 2}
+  .reg-r .rm{grid-column:1/span 2;width:100%;border-radius:var(--r-ctl);height:34px;
+    background:var(--fill);border:1px solid var(--sep)}
 
   /* 시트가 아래에서 올라온다 */
   .drawer{
@@ -634,7 +667,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v30</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v31</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -863,7 +896,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v30';
+const APP_VER = 'v31';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';

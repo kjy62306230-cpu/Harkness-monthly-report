@@ -1,7 +1,7 @@
 /* 하크니스 월간 리포트 — 항상 최신 화면을 받도록 하는 서비스 워커
    문서(HTML)는 네트워크 우선. 인터넷이 안 되면 마지막 화면을 보여준다.
    아이콘 같은 정적 파일만 캐시 우선. */
-const CACHE = 'hk-app-v30';
+const CACHE = 'hk-app-v31';
 
 self.addEventListener('install', () => { self.skipWaiting(); });
 
