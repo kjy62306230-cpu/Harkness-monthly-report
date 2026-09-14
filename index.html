@@ -125,7 +125,10 @@ body{
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 button{cursor:pointer;border:none;background:none}
 :focus-visible{outline:2.5px solid var(--accent);outline-offset:2px;border-radius:6px}
-.hide{display:none !important}
+.hide{display:none !important;visibility:hidden !important;pointer-events:none !important;
+  -webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+button,.chip,select,a,label,summary{touch-action:manipulation}
+button svg,.chip svg{pointer-events:none}
 .tiny{font-size:11.5px;color:var(--ink3);line-height:1.6}
 
 /* ---------- 유리 표면 ---------- */
@@ -270,9 +273,8 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
 .empty b{display:block;font-size:17px;color:var(--ink2);margin-bottom:6px;font-weight:700}
 
 /* ---------- 시트(드로어) ---------- */
-.scrim{position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;
-  -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px)}
-.scrim.on{opacity:1;pointer-events:auto}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:60;opacity:0;pointer-events:none;transition:opacity .25s}
+.scrim.on{opacity:1;pointer-events:auto;-webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px)}
 .drawer{
   position:fixed;top:0;right:0;bottom:0;width:min(580px,100%);z-index:70;
   background:var(--surface); border-left:1px solid var(--edge);
@@ -281,6 +283,7 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
   display:flex;flex-direction:column;box-shadow:var(--lift);
 }
 .drawer.on{transform:none}
+.drawer:not(.on){pointer-events:none;-webkit-backdrop-filter:none;backdrop-filter:none}
 .dhead{
   padding:16px 20px 14px;display:flex;align-items:flex-start;gap:12px;
   border-bottom:1px solid var(--sep);background:var(--raised);
@@ -435,8 +438,8 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
 .loadv:hover{background:var(--accent-soft)}
 
 /* ---------- 모달 ---------- */
-.modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.32);
-  -webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px)}
+.modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.32)}
+.modal:not(.hide){-webkit-backdrop-filter:blur(2px); backdrop-filter:blur(2px)}
 .mbox{
   width:100%;max-width:720px;max-height:88dvh;border-radius:var(--r-sheet);overflow:hidden;
   display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--edge);
@@ -554,7 +557,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <span class="ver" id="ver" title="화면 버전">v18</span>
+      <span class="ver" id="ver" title="화면 버전">v19</span>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="linkbtn" id="btnAdmin">학생 관리</button>
       <button class="linkbtn" id="btnOut">로그아웃</button>
@@ -1181,18 +1184,24 @@ function mRecUI(on){
   $('#mRecHint').innerHTML=on?'다 말씀하셨으면 끝내기를 누르세요':`담당 학생 <b>${MROSTER.length}</b>명 중에서 찾습니다`;
 }
 $('#chipVoice').onclick=()=>{
-  MROSTER=scoped().filter(r=>r.students).map(r=>({ id:r.student_id, rid:r.id, name:r.students.name,
-    school:r.students.school, grade:r.students.grade, status:r.status }));
-  if(!MROSTER.length){ toast('먼저 학생을 등록해 주세요'); return; }
-  $('#mRosterN').textContent=MROSTER.length;
-  mvReset(); $('#mv').classList.remove('hide');
+  let list=[];
+  try{
+    list=scoped().filter(r=>r.students).map(r=>({ id:r.student_id, rid:r.id, name:r.students.name,
+      school:r.students.school, grade:r.students.grade, status:r.status }));
+  }catch(e){ console.error('[mv] roster', e); }
+  if(!list.length){ toast('먼저 학생을 등록해 주세요'); return; }
+  MROSTER=list;
+  $('#mv').classList.remove('hide');          // 무슨 일이 있어도 먼저 연다
+  try{ $('#mRosterN').textContent=MROSTER.length; mvReset(); }
+  catch(e){ console.error('[mv] reset', e); }
 };
 function mvReset(){
   mStopRec(); MRES=[]; MSEC=0; $('#mRecTime').textContent='0:00'; mvmsg('');
   $('#mvResult').innerHTML=''; $('#mvTrBox').classList.add('hide');
   $('#mvEx').classList.remove('hide'); $('#mvFoot').classList.add('hide'); mRecUI(false);
 }
-$('#mvClose').onclick=()=>{ mStopRec(); $('#mv').classList.add('hide'); };
+$('#mvClose').onclick=()=>{ try{ mStopRec(); }catch(e){} $('#mv').classList.add('hide');
+  $('#mBtnRec').disabled=false; };
 $('#mvRedo').onclick=mvReset;
 
 $('#mBtnRec').onclick=async()=>{
