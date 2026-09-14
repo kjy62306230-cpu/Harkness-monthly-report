@@ -557,7 +557,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <span class="ver" id="ver" title="화면 버전">v19</span>
+      <span class="ver" id="ver" title="화면 버전">v20</span>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="linkbtn" id="btnAdmin">학생 관리</button>
       <button class="linkbtn" id="btnOut">로그아웃</button>
@@ -1183,7 +1183,9 @@ function mRecUI(on){
   $('#mRecLabel').textContent=on?'녹음 끝내기':'녹음 시작';
   $('#mRecHint').innerHTML=on?'다 말씀하셨으면 끝내기를 누르세요':`담당 학생 <b>${MROSTER.length}</b>명 중에서 찾습니다`;
 }
-$('#chipVoice').onclick=()=>{
+let MVGUARD=0;
+function openMv(){
+  const now=Date.now(); if(now-MVGUARD<450) return; MVGUARD=now;   // click+pointerup 중복 방지
   let list=[];
   try{
     list=scoped().filter(r=>r.students).map(r=>({ id:r.student_id, rid:r.id, name:r.students.name,
@@ -1194,7 +1196,10 @@ $('#chipVoice').onclick=()=>{
   $('#mv').classList.remove('hide');          // 무슨 일이 있어도 먼저 연다
   try{ $('#mRosterN').textContent=MROSTER.length; mvReset(); }
   catch(e){ console.error('[mv] reset', e); }
-};
+}
+/* click 이 안 오는 경우(iOS)까지 대비해 두 갈래로 받는다 */
+$('#chipVoice').addEventListener('click', openMv);
+$('#chipVoice').addEventListener('pointerup', ()=>{ setTimeout(openMv, 60); });
 function mvReset(){
   mStopRec(); MRES=[]; MSEC=0; $('#mRecTime').textContent='0:00'; mvmsg('');
   $('#mvResult').innerHTML=''; $('#mvTrBox').classList.add('hide');
