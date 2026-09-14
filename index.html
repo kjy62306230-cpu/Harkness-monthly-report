@@ -206,6 +206,9 @@ header{
 .pill{background:var(--fill);padding:3px 10px;border-radius:var(--r-pill);font-size:11.5px;font-weight:700;color:var(--ink2)}
 .pill.dir{background:var(--accent-soft);color:var(--accent-deep)}
 a.linkbtn{text-decoration:none;display:inline-block}
+.regWarn{margin-top:12px;border-left:3px solid var(--amber-solid);background:var(--amber-soft);
+  border-radius:0 10px 10px 0;padding:12px 15px;font-size:13px;line-height:1.75;color:var(--ink2)}
+.regWarn b{color:var(--ink);font-weight:800}
 .findRow{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:15px;font-size:12.5px;color:var(--ink3)}
 .findLink{background:none;border:0;font:inherit;font-size:12.5px;font-weight:700;color:var(--ink2);
   cursor:pointer;padding:4px 2px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--fill2)}
@@ -631,7 +634,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v29</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v30</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -833,6 +836,9 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
           <button class="btn" id="btnReg" style="width:auto;padding:9px 26px">등록하기</button>
           <div id="regMsg" class="tiny"></div>
         </div>
+        <div class="regWarn hide" id="regWarn"></div>
+        <div style="display:none">
+        </div>
       </div>
       <div class="sec">
         <h3>학생 명단 <small id="stuCnt"></small></h3>
@@ -857,7 +863,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v29';
+const APP_VER = 'v30';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1973,17 +1979,18 @@ $('#btnReg').onclick=async()=>{
   const have=new Set((exist||[]).map(key));
   const already=rows.filter(r=>have.has(key(r))).map(r=>r.name);
   const dups=[...new Set([...selfDup,...already])];
-  if(dups.length){
-    const ok=confirm('이미 등록된 학생이 있습니다.\n\n'+dups.join(' · ')+
-      '\n\n그래도 추가하시겠습니까?\n(동명이인이 아니라면 [취소]를 누르세요)');
-    if(!ok){ $('#regMsg').textContent='등록을 취소했습니다. 중복된 이름을 지우고 다시 해주세요.'; return; }
-  }
-
+  $('#regWarn').classList.add('hide');
   $('#btnReg').disabled=true;
   const { error }=await sb.from('students').insert(rows);
   $('#btnReg').disabled=false;
   if(error){ $('#regMsg').textContent='실패: '+error.message; return; }
-  $('#regMsg').textContent=`${rows.length}명 등록됐습니다.`; toast(`${rows.length}명 등록`);
+  $('#regMsg').textContent=`${rows.length}명 등록됐습니다.`;
+  if(dups.length){
+    $('#regWarn').innerHTML='⚠️ <b>'+dups.map(esc).join(' · ')+'</b> — 이름·학교·학년이 같은 학생이 <b>이미 있습니다.</b><br>'+
+      '동명이인이면 그대로 두시면 되고, <b>같은 학생이면 아래 「학생 명단」에서 ✕ 로 하나를 지워 주세요.</b>';
+    $('#regWarn').classList.remove('hide');
+    toast(`${rows.length}명 등록 · 같은 이름 ${dups.length}명 확인 필요`);
+  } else toast(`${rows.length}명 등록`);
   $$('#reg .reg-r').forEach(r=>r.remove()); addRow(); addRow(); addRow();
   await load(); await drawAdmin();
 };
