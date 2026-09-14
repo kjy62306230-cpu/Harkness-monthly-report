@@ -618,7 +618,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v27</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v28</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -844,7 +844,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v27';
+const APP_VER = 'v28';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -894,6 +894,7 @@ function showUpd(nv){
   document.body.appendChild(d);
   document.getElementById('updGo').onclick=()=>{
     try{ if(window.caches&&caches.keys) caches.keys().then(k=>k.forEach(x=>caches.delete(x))); }catch(e){}
+    try{ if(navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.update())); }catch(e){}
     location.replace(location.pathname+'?u='+Date.now());
   };
 }
@@ -901,9 +902,28 @@ document.addEventListener('DOMContentLoaded',()=>{
   const v=document.getElementById('ver');
   if(v) v.onclick=()=>{
     try{ if(window.caches&&caches.keys) caches.keys().then(k=>k.forEach(x=>caches.delete(x))); }catch(e){}
+    try{ if(navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.update())); }catch(e){}
     location.replace(location.pathname+'?u='+Date.now());
   };
 });
+/* ---------- 서비스 워커: 설치된 앱도 항상 최신으로 ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').then(reg=>{
+      reg.update();
+      setInterval(()=>{ try{ reg.update(); }catch(e){} }, 30*60*1000);
+      reg.addEventListener('updatefound', ()=>{
+        const w = reg.installing;
+        if(!w) return;
+        w.addEventListener('statechange', ()=>{
+          if(w.state==='installed' && navigator.serviceWorker.controller) checkUpdate();
+        });
+      });
+    }).catch(()=>{});
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{});
+  });
+}
+
 setTimeout(checkUpdate, 2500);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkUpdate(); });
 
