@@ -2,6 +2,9 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>하크니스 · 월간 학습 리포트</title>
 <meta name="theme-color" content="#5170ff">
@@ -196,7 +199,9 @@ header{
 .hlogo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15.5px;letter-spacing:-.03em;white-space:nowrap}
 .hlogo img{width:29px;height:29px}
 .who{font-size:12.5px;color:var(--ink3);margin-left:auto;display:flex;align-items:center;gap:9px}
-.ver{font-size:10.5px;color:var(--ink3);opacity:.6;font-variant-numeric:tabular-nums}
+.ver{font-size:10.5px;color:var(--ink3);opacity:.6;font-variant-numeric:tabular-nums;
+  background:none;border:0;font-family:inherit;cursor:pointer;padding:2px 4px}
+.ver:hover{opacity:1;color:var(--accent-deep)}
 .pill{background:var(--fill);padding:3px 10px;border-radius:var(--r-pill);font-size:11.5px;font-weight:700;color:var(--ink2)}
 .pill.dir{background:var(--accent-soft);color:var(--accent-deep)}
 a.linkbtn{text-decoration:none;display:inline-block}
@@ -441,7 +446,11 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
 
 /* ---------- 발송 기록 ---------- */
 .hist-i{background:var(--surface-solid);border:1px solid var(--sep);border-radius:var(--r-card);margin-bottom:8px;overflow:hidden}
-.hist-t{width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;text-align:left;transition:background .15s}
+.hist-r{display:flex;align-items:stretch}
+.hist-t{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:12px 14px;text-align:left;transition:background .15s}
+.histX{flex:0 0 auto;width:42px;border:0;border-left:1px solid var(--sep);background:transparent;
+  color:var(--ink3);font-size:14px;font-weight:800;cursor:pointer;transition:background .15s,color .15s}
+.histX:hover,.histX:active{background:var(--red-soft);color:var(--red)}
 .hist-t:hover{background:var(--fill)}
 .hist-t b{font-size:14px;font-weight:700;min-width:74px;letter-spacing:-.02em}
 .hist-t .pv{font-size:12.5px;color:var(--ink3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -609,7 +618,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <span class="ver" id="ver" title="화면 버전">v26</span>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v27</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -835,7 +844,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v26';
+const APP_VER = 'v27';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -888,6 +897,13 @@ function showUpd(nv){
     location.replace(location.pathname+'?u='+Date.now());
   };
 }
+document.addEventListener('DOMContentLoaded',()=>{
+  const v=document.getElementById('ver');
+  if(v) v.onclick=()=>{
+    try{ if(window.caches&&caches.keys) caches.keys().then(k=>k.forEach(x=>caches.delete(x))); }catch(e){}
+    location.replace(location.pathname+'?u='+Date.now());
+  };
+});
 setTimeout(checkUpdate, 2500);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkUpdate(); });
 
@@ -1721,7 +1737,10 @@ async function loadHistory(){
     const pv=(r.counsel||P.map(x=>x[1]).join(' · ')||'—').replace(/\n/g,' ');
     const ver=r.version>1?`<span class="vtag">${r.version}차 수정</span>`:'';
     return `<div class="hist-i">
-      <button class="hist-t" data-h="${i}"><b>${ymLabel(r.period)}</b>${ver}<span class="pv">${esc(pv)}</span><span class="ar">▾</span></button>
+      <div class="hist-r">
+        <button class="hist-t" data-h="${i}"><b>${ymLabel(r.period)}</b>${ver}<span class="pv">${esc(pv)}</span><span class="ar">▾</span></button>
+        ${ME.role==='director'?`<button class="histX" data-d="${i}" title="이 기록 삭제">✕</button>`:''}
+      </div>
       <div class="hist-b hide" id="hb${i}">
         <p class="hint" style="margin:10px 0 0">발송 ${esc(fmtTs(r.sent_at))}${r.teacher_name?' · '+esc(r.teacher_name)+' 선생님':''}</p>
         ${P.length?`<dl>${P.map(([k,v2])=>`<dt>${k}</dt><dd>${esc(v2)}</dd>`).join('')}</dl>`:''}
@@ -1734,13 +1753,14 @@ async function loadHistory(){
     const body=$('#hb'+t.dataset.h); const op=!body.classList.contains('hide');
     body.classList.toggle('hide',op); t.querySelector('.ar').textContent=op?'▾':'▴';
   });
-  $$('#histWrap .delv').forEach(b=>b.onclick=async()=>{
+  $$('#histWrap .delv, #histWrap .histX').forEach(b=>b.onclick=async()=>{
     const r=LOGS[+b.dataset.d];
     const label=`${ymLabel(r.period)}${r.version>1?' '+r.version+'차 수정':''} 기록`;
     if(!confirm(`${CUR?.students?.name||''} 학생의 ${label}을 삭제합니다.\n\n목록에서 사라지고 되돌릴 수 없습니다.\n(누가 언제 무엇을 지웠는지는 따로 남습니다)`)) return;
-    b.disabled=true; b.textContent='삭제하는 중…';
+    const wasX=b.classList.contains('histX'); const lbl=b.textContent;
+    b.disabled=true; b.textContent=wasX?'…':'삭제하는 중…';
     const { error }=await sb.from('feedback_logs').delete().eq('id', r.id);
-    if(error){ b.disabled=false; b.textContent='이 기록 삭제'; toast('삭제하지 못했습니다: '+error.message); return; }
+    if(error){ b.disabled=false; b.textContent=lbl; toast('삭제하지 못했습니다: '+error.message); return; }
     await loadHistory();
     toast(`${label}을 삭제했습니다`);
   });
