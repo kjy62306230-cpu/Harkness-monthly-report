@@ -200,6 +200,21 @@ header{
 .pill{background:var(--fill);padding:3px 10px;border-radius:var(--r-pill);font-size:11.5px;font-weight:700;color:var(--ink2)}
 .pill.dir{background:var(--accent-soft);color:var(--accent-deep)}
 a.linkbtn{text-decoration:none;display:inline-block}
+.thBtn{
+  display:inline-flex;align-items:center;gap:5px;border:1px solid var(--sep);
+  background:var(--fill);color:var(--ink2);font:inherit;font-size:11.5px;font-weight:700;
+  padding:4px 10px;border-radius:var(--r-pill);cursor:pointer;white-space:nowrap;
+}
+.thBtn:hover{background:var(--fill2)}
+.thBtn #thIcon{font-weight:900;font-size:11px;opacity:.7}
+/* 새 버전 알림 */
+#updBar{position:fixed;left:0;right:0;top:0;z-index:9998;
+  background:var(--accent);color:#fff;font-family:inherit;
+  padding:calc(11px + env(safe-area-inset-top)) 16px 11px;
+  display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;
+  font-size:13.5px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+#updBar button{font:inherit;font-size:13px;font-weight:800;border:0;border-radius:9px;
+  padding:8px 15px;background:#fff;color:var(--accent-deep);cursor:pointer}
 .guideBtn{
   display:inline-flex;align-items:center;gap:6px;text-decoration:none;
   font:inherit;font-size:12.5px;font-weight:800;letter-spacing:-.02em;
@@ -442,8 +457,8 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
 .chg{margin-top:10px;background:var(--fill);border-radius:var(--r-ctl);padding:11px 14px;font-size:12px;color:var(--ink2);line-height:1.7}
 .chg b{display:block;font-size:11px;color:var(--ink3);font-weight:700;letter-spacing:.03em;margin-bottom:5px}
 .chg ul{margin:0;padding-left:16px}
-.delv{margin-top:9px;width:100%;padding:9px;border-radius:var(--r-ctl);background:transparent;border:1px solid var(--sep);font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer}
-.delv:hover{border-color:var(--red);color:var(--red);background:var(--red-soft)}
+.delv{margin-top:9px;width:100%;padding:10px;border-radius:var(--r-ctl);background:var(--red-soft);border:1px solid transparent;font-size:12.5px;font-weight:800;color:var(--red);cursor:pointer}
+.delv:hover{border-color:var(--red)}
 .loadv{margin-top:14px;width:100%;padding:10px;border-radius:var(--r-ctl);background:var(--fill);border:1px solid var(--sep);font-size:12.5px;font-weight:700;color:var(--accent-deep)}
 .loadv:hover{background:var(--accent-soft)}
 
@@ -581,8 +596,11 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <span class="ver" id="ver" title="화면 버전">v24</span>
+      <span class="ver" id="ver" title="화면 버전">v25</span>
       <span id="meName"></span><span class="pill" id="meRole"></span>
+      <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
+        <span id="thIcon">A</span><span id="thTxt">자동</span>
+      </button>
       <a class="guideBtn" id="btnGuide" href="guide.html" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>사용법</a>
       <button class="linkbtn" id="btnAdmin">학생 관리</button>
       <button class="linkbtn" id="btnOut">로그아웃</button>
@@ -782,6 +800,62 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
+const APP_VER = 'v25';
+
+/* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
+const THKEY='hk_theme';
+const THMODES=[
+  {v:'auto',  i:'A', t:'자동'},
+  {v:'light', i:'☀', t:'밝게'},
+  {v:'dark',  i:'☾', t:'어둡게'},
+];
+function applyTheme(v){
+  const r=document.documentElement;
+  if(v==='light') r.setAttribute('data-theme','light');
+  else if(v==='dark') r.setAttribute('data-theme','dark');
+  else r.removeAttribute('data-theme');
+  const m=THMODES.find(x=>x.v===v)||THMODES[0];
+  const ic=document.getElementById('thIcon'), tx=document.getElementById('thTxt');
+  if(ic) ic.textContent=m.i;
+  if(tx) tx.textContent=m.t;
+}
+let THEME=(()=>{ try{ return localStorage.getItem(THKEY)||'auto'; }catch(e){ return 'auto'; } })();
+applyTheme(THEME);
+document.addEventListener('DOMContentLoaded',()=>{
+  applyTheme(THEME);
+  const b=document.getElementById('btnTheme');
+  if(b) b.onclick=()=>{
+    const i=THMODES.findIndex(x=>x.v===THEME);
+    THEME=THMODES[(i+1)%THMODES.length].v;
+    try{ localStorage.setItem(THKEY,THEME); }catch(e){}
+    applyTheme(THEME);
+  };
+});
+
+/* ---------- 새 버전 자동 감지 ---------- */
+async function checkUpdate(){
+  try{
+    const r=await fetch('index.html?cb='+Date.now(),{cache:'no-store'});
+    if(!r.ok) return;
+    const t=await r.text();
+    const m=t.match(/id="ver"[^>]*>\s*(v\d+)\s*</);
+    if(m && m[1]!==APP_VER) showUpd(m[1]);
+  }catch(e){}
+}
+function showUpd(nv){
+  if(document.getElementById('updBar')) return;
+  const d=document.createElement('div'); d.id='updBar';
+  d.innerHTML='<span>새 버전 '+nv+' 이 나왔습니다</span>'+
+              '<button type="button" id="updGo">새로고침</button>';
+  document.body.appendChild(d);
+  document.getElementById('updGo').onclick=()=>{
+    try{ if(window.caches&&caches.keys) caches.keys().then(k=>k.forEach(x=>caches.delete(x))); }catch(e){}
+    location.replace(location.pathname+'?u='+Date.now());
+  };
+}
+setTimeout(checkUpdate, 2500);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkUpdate(); });
+
 const SUPABASE_URL = 'https://mlrjiabejpnoutwmzkcr.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_FKOtX-zLsr_zYJdM0c-YJQ_R84OcLdT';
 const ACADEMY = { name:'하크니스영어학원', tel:'051-505-1294', addr:'부산 연제구 아시아드대로82번길 27, 4층' };
@@ -1566,7 +1640,7 @@ async function loadHistory(){
         ${P.length?`<dl>${P.map(([k,v2])=>`<dt>${k}</dt><dd>${esc(v2)}</dd>`).join('')}</dl>`:''}
         ${r.counsel?`<div class="cs">${esc(r.counsel)}</div>`:''}
         <button class="loadv" data-l="${i}">${r.period===PERIOD?'이 내용 불러와서 고치기':`이 내용 가져와서 ${ymLabel(PERIOD)}에 쓰기`}</button>
-        ${ME.role==='director'?`<button class="delv" data-d="${i}">이 기록 삭제</button>`:''}
+        ${ME.role==='director'?`<button class="delv" data-d="${i}">🗑 이 기록 삭제 (원장 전용)</button>`:''}
       </div></div>`;
   }).join('');
   $$('#histWrap .hist-t').forEach(t=>t.onclick=()=>{
