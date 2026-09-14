@@ -172,6 +172,23 @@ footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);
   font-size:13px;color:var(--ink3);line-height:1.8}
 footer b{color:var(--ink2)}
 
+/* ---------- PDF 저장 버튼 ---------- */
+.saveBtn{
+  position:fixed;right:16px;bottom:16px;z-index:50;
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--blue);color:#fff;border:0;border-radius:999px;
+  font-family:inherit;font-size:14px;font-weight:800;letter-spacing:-.02em;
+  padding:13px 20px;cursor:pointer;
+  box-shadow:0 2px 6px rgba(16,20,40,.16),0 14px 32px -12px rgba(16,20,40,.5);
+  transition:transform .16s ease, filter .16s ease;
+}
+.saveBtn:hover{filter:brightness(1.06)}
+.saveBtn:active{transform:scale(.97)}
+.saveBtn svg{width:16px;height:16px;display:block}
+.saveHint{font-size:12.5px;color:var(--ink3);line-height:1.7;margin:14px 0 0}
+@supports(padding:max(0px)){
+  .saveBtn{bottom:max(16px,env(safe-area-inset-bottom))}
+}
 @media print{
   :root{--bg:#fff;--surface:#fff;--raised:#F4F5F9}
   body{font-size:11pt}
@@ -179,7 +196,7 @@ footer b{color:var(--ink2)}
   .cover{min-height:242mm;margin-bottom:0;border-bottom:none;
     page-break-after:always;break-after:page}
   h1{font-size:40pt} h1 .thin{font-size:25pt}
-  .toc{display:none}
+  .toc,.saveBtn{display:none!important}
   section{page-break-inside:auto;margin-top:30px;padding-top:0}
   .shead{break-after:avoid;page-break-after:avoid}
   h3{break-after:avoid;page-break-after:avoid}
@@ -207,6 +224,7 @@ footer b{color:var(--ink2)}
   <div class="rule"></div>
   <p class="lede">학생 한 명에 <b>2~3분</b>.<br>말로 하면 더 빠릅니다.</p>
   <p class="cmeta">이 문서 하나만 보시면 됩니다<br>051-505-1294 · 부산 연제구 아시아드대로82번길 27, 4층</p>
+  <p class="saveHint">파일로 갖고 계시려면 오른쪽 아래 <b>PDF로 저장</b> 을 누르세요.</p>
 </header>
 
 <ol class="toc">
@@ -478,6 +496,18 @@ footer b{color:var(--ink2)}
 </footer>
 
 </div>
+
+<button class="saveBtn" id="savePdf" type="button" aria-label="이 설명서를 PDF로 저장">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+  PDF로 저장
+</button>
+<script>
+document.getElementById('savePdf').addEventListener('click',function(){
+  try{ window.print(); }
+  catch(e){ alert('브라우저 메뉴에서 인쇄를 누르신 뒤 «PDF로 저장»을 고르시면 됩니다.'); }
+});
+</script>
+
 
 </body>
 </html>
