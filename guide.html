@@ -13,6 +13,19 @@
 html{scroll-behavior:smooth}
 img{max-width:100%}
 [hidden]{display:none!important}
+
+#iabBar{position:fixed;left:0;right:0;top:0;z-index:9999;
+  background:#14151B;color:#fff;font-family:inherit;
+  padding:calc(14px + env(safe-area-inset-top)) 16px 16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.45)}
+#iabBar .iabIn{max-width:33rem;margin:0 auto}
+#iabBar b{font-weight:800}
+#iabBar .iabT{display:block;font-size:15.5px;margin-bottom:6px}
+#iabBar p{margin:0 0 12px;font-size:13.5px;line-height:1.65;color:#C4C8D4}
+#iabBar .iabBtns{display:flex;gap:8px;flex-wrap:wrap}
+#iabBar button{font-family:inherit;font-size:14px;font-weight:800;border:0;border-radius:10px;
+  padding:11px 16px;background:#4257E8;color:#fff;cursor:pointer;flex:1 1 auto}
+#iabBar button.ghost{background:rgba(255,255,255,.14);flex:0 0 auto}
 </style>
 <title>하크니스 월간 리포트 사용법</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -173,6 +186,7 @@ footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);
 footer b{color:var(--ink2)}
 
 /* ---------- PDF 저장 버튼 ---------- */
+a.saveBtn{text-decoration:none}
 .saveBtn{
   position:fixed;right:16px;bottom:16px;z-index:50;
   display:inline-flex;align-items:center;gap:8px;
@@ -225,7 +239,7 @@ footer b{color:var(--ink2)}
   <div class="rule"></div>
   <p class="lede">학생 한 명에 <b>2~3분</b>.<br>말로 하면 더 빠릅니다.</p>
   <p class="cmeta">이 문서 하나만 보시면 됩니다<br>051-505-1294 · 부산 연제구 아시아드대로82번길 27, 4층</p>
-  <p class="saveHint">파일로 갖고 계시려면 오른쪽 아래 <b>PDF로 저장</b> 을 누르세요.</p>
+  <p class="saveHint">파일로 갖고 계시려면 오른쪽 아래 <b>PDF 받기</b> 를 누르세요.</p>
 </header>
 
 <ol class="toc">
@@ -520,17 +534,56 @@ footer b{color:var(--ink2)}
 
 </div>
 
-<button class="saveBtn" id="savePdf" type="button" aria-label="이 설명서를 PDF로 저장">
+<a class="saveBtn" id="savePdf" href="guide.pdf" download="하크니스 월간 리포트 사용법.pdf" aria-label="설명서 PDF 내려받기">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-  PDF로 저장
-</button>
+  PDF 받기
+</a>
+
+
+
 <script>
-document.getElementById('savePdf').addEventListener('click',function(){
-  try{ window.print(); }
-  catch(e){ alert('브라우저 메뉴에서 인쇄를 누르신 뒤 «PDF로 저장»을 고르시면 됩니다.'); }
-});
+/* 카톡 등 앱 안 브라우저 → 진짜 브라우저로 */
+(function(){
+  var ua=navigator.userAgent.toLowerCase();
+  if(!/kakaotalk|naver|daumapps|instagram|fb_iab|fbav|line\//.test(ua)) return;
+  var isA=/android/.test(ua), url=location.href;
+
+  function toChrome(){
+    location.href='intent://'+url.replace(/^https?:\/\//,'')+
+      '#Intent;scheme=https;package=com.android.chrome;end';
+  }
+  function copy(cb){
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(cb).catch(fb);
+    } else fb();
+    function fb(){ var t=document.createElement('textarea'); t.value=url;
+      t.style.cssText='position:fixed;opacity:0'; document.body.appendChild(t); t.select();
+      try{ document.execCommand('copy'); cb(); }catch(e){} t.remove(); }
+  }
+  function bar(){
+    if(document.getElementById('iabBar')) return;
+    var d=document.createElement('div'); d.id='iabBar';
+    d.innerHTML='<div class="iabIn">'+
+      '<b class="iabT">카톡 안에서 열렸습니다</b>'+
+      '<p>여기서는 <b>홈 화면에 추가</b>가 안 됩니다.'+
+      (isA?'':'<br>오른쪽 <b>아래 화살표</b> → <b>Safari로 열기</b>')+'</p>'+
+      '<div class="iabBtns">'+
+        '<button type="button" id="iabGo">다른 브라우저로 열기</button>'+
+        '<button type="button" id="iabX" class="ghost">닫기</button>'+
+      '</div></div>';
+    document.body.appendChild(d);
+    document.body.style.paddingTop=d.offsetHeight+'px';
+    document.getElementById('iabX').onclick=function(){ d.remove(); document.body.style.paddingTop=''; };
+    document.getElementById('iabGo').onclick=function(){
+      var b=this;
+      if(isA){ toChrome(); return; }
+      copy(function(){ b.textContent='주소 복사됨 · Safari에 붙여넣기'; });
+    };
+  }
+  if(isA){ toChrome(); setTimeout(bar,1500); }
+  else if(document.readyState!=='loading') bar();
+  else document.addEventListener('DOMContentLoaded',bar);
+})();
 </script>
-
-
 </body>
 </html>
