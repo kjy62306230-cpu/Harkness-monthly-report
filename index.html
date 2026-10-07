@@ -420,6 +420,8 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
 }
 .pfilt button:hover{background:var(--fill)}
 .pfilt button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.examVoice{margin-top:16px;padding:16px;border-radius:16px;border:1px solid var(--sep);background:var(--fill)}
+.examVoice h4{margin:0 0 11px;font-size:14px;font-weight:800;letter-spacing:-.03em;color:var(--ink2)}
 .btn.mark{background:#1a9c6b;border-color:#1a9c6b;color:#fff}
 .btn.mark:hover{background:#16885d}
 .btn.mark:disabled{opacity:.45}
@@ -773,7 +775,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v44</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v45</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -824,7 +826,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
       <div><b>지난달 내용을 불러왔습니다.</b><br>이어서 고쳐 쓰시면 됩니다.</div>
       <button id="btnClearCarry">지우고 새로</button>
     </div>
-    <div class="sec">
+    <div class="sec" id="secVoice">
       <h3>음성으로 한 번에 <small>· 말하면 아래 칸이 채워집니다</small></h3>
       <div class="rec" id="recBox">
         <button class="recBtn" id="btnRec"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></span><span id="recLabel">녹음 시작</span></button>
@@ -852,8 +854,24 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
       <div class="prog">
         <label><span>시험명</span><input id="eT" placeholder="예: 2학기 중간고사"></label>
       </div>
-      <textarea class="ta" id="eR" placeholder="시험 범위를 적어주세요.&#10;예) 영어 교과서 Lesson 5~6 · 부교재 3800제 CH7~9&#10;    모의고사 3월·6월 · 외부지문 20선&#10;줄바꿈 그대로 카드에 들어갑니다." style="margin-top:9px"></textarea>
+      <textarea class="ta" id="eR" placeholder="시험 범위를 적어주세요.&#10;예) 영어 교과서 Lesson 5~6&#10;    부교재 워크북 p.40~62&#10;    3월 모의고사 18~28번&#10;한 줄에 하나씩. 줄바꿈 그대로 카드에 들어갑니다." style="margin-top:9px"></textarea>
       <p class="hint">학교·과목·단원·부교재까지 적어두시면 학부모가 바로 이해합니다.</p>
+
+      <div class="examVoice">
+        <h4>시험 범위, 말로 불러주기</h4>
+        <div class="rec" id="eRecBox">
+          <button class="recBtn" id="eBtnRec"><span class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></span><span id="eRecLabel">녹음 시작</span></button>
+          <div class="recInfo"><span id="eRecTime">0:00</span><span id="eRecHint">시험명 · 범위 · 대비 상황을 편하게 말씀하세요</span></div>
+        </div>
+        <div class="vmode" id="eMode">
+          <button class="on" data-evm="merge" type="button">이어서 채우기</button>
+          <button data-evm="fresh" type="button">전부 새로</button>
+        </div>
+        <div class="vmodeHint" id="eModeHint">빈 칸만 채웁니다. 범위는 아래에 줄을 더해 쌓입니다.</div>
+        <p class="hint" style="margin-top:8px">학교마다 범위 적는 방식이 다릅니다. <b>순서 상관없이</b> 교과서·부교재·프린트·모의고사·단어를 부르는 대로 말씀하시면 <b>한 줄에 하나씩</b> 정리해 넣습니다.</p>
+        <div class="voiceMsg hide" id="eVoiceMsg"></div>
+        <details class="tr hide" id="eTrBox"><summary>받아쓴 내용 보기</summary><div id="eTrText"></div></details>
+      </div>
     </div>
 
     <div class="sec" id="secProg">
@@ -1091,7 +1109,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v44';
+const APP_VER = 'v45';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1356,6 +1374,11 @@ function open(id){
   $('#carry').classList.toggle('hide',!carried);
   $('#btnSent').textContent='발송';
   VM='merge'; FRESHBAK=null; LOGS=[];
+  EVM='merge'; EFRESHBAK=null; EBEFORE=null;
+  try{ eStopRec(); }catch(e){}
+  evmsg(''); $('#eTrBox').classList.add('hide'); $('#eRecTime').textContent='0:00';
+  $$('#eMode button').forEach(b=>b.classList.toggle('on', b.dataset.evm==='merge'));
+  $('#eModeHint').textContent='빈 칸만 채웁니다. 범위는 아래에 줄을 더해 쌓입니다.';
   $$('#vMode button').forEach(b=>b.classList.toggle('on', b.dataset.vm==='merge'));
   $('#vModeHint').textContent=HINT_MERGE;
   stamp();
@@ -1366,6 +1389,7 @@ function open(id){
   $('#drawer').classList.add('on'); $('#scrim').classList.add('on'); document.body.style.overflow='hidden';
 }
 async function close(){
+  try{ eStopRec(); }catch(e){}
   if(CUR&&FRESHBAK) restoreFreshBak();        // [전부 새로] 로 비운 건 저장 전에 되살린다
   if(CUR&&DIRTY&&CUR.status!=='sent'){ await save('drafted',true); toast('저장됐습니다'); }
   $('#drawer').classList.remove('on'); $('#scrim').classList.remove('on'); document.body.style.overflow=''; CUR=null;
@@ -1390,6 +1414,8 @@ function applyKind(k,redraw){
   $$('#kindSw button').forEach(b=>b.classList.toggle('on', b.dataset.kind===KIND));
   $('#secExam').hidden = !ex;
   $('#secProg').hidden = ex;
+  const sv=$('#secVoice'); if(sv) sv.hidden = ex;      // 월간 마이크는 월간 모드에서만
+  try{ if(ex) stopRec(); else eStopRec(); }catch(e){}
   $('#eC').classList.toggle('hide', !ex);
   $('#vCounsel').classList.toggle('hide', ex);
   $('#counselH').textContent = ex ? '학부모 상담 · 피드백' : '학부모 상담 · 피드백';
@@ -1598,6 +1624,104 @@ $('#btnRec').onclick=async()=>{
 };
 function stopRec(){ try{ REC && REC.state==='recording' && REC.stop(); }catch{} }
 
+/* ==================== 시험대비 전용 녹음 ====================
+   시험 범위는 학교마다 형식이 제각각이라 월간 4칸 분석기로는 담기지 않는다.
+   exam-parse 엣지 함수가 시험명 / 범위(줄 단위) / 대비 상담으로만 나눠 준다. */
+let EREC=null, ECHUNKS=[], ERECT=null, ERECSEC=0, EBEFORE=null, EVM='merge';
+const SEP_R='\n';   // 시험 범위는 줄로 쌓는다
+function evmsg(t,cls){ const e=$('#eVoiceMsg'); if(!t){ e.className='voiceMsg hide'; return; }
+  e.className='voiceMsg'+(cls?' '+cls:''); e.textContent=t; }
+function eRecUI(on){
+  $('#eBtnRec').classList.toggle('on',on);
+  $('#eRecLabel').textContent=on?'녹음 끝내기':'녹음 시작';
+  $('#eRecHint').textContent=on?'다 말씀하셨으면 끝내기를 누르세요':'시험명 · 범위 · 대비 상황을 편하게 말씀하세요';
+}
+function eRecTick(){ ERECSEC++; $('#eRecTime').textContent=Math.floor(ERECSEC/60)+':'+String(ERECSEC%60).padStart(2,'0');
+  if(ERECSEC>=180) eStopRec(); }
+function eStopRec(){ try{ EREC && EREC.state==='recording' && EREC.stop(); }catch{} }
+
+$('#eBtnRec').onclick=async()=>{
+  if(EREC && EREC.state==='recording'){ eStopRec(); return; }
+  if(!navigator.mediaDevices || !window.MediaRecorder){ evmsg('이 브라우저는 녹음을 지원하지 않습니다. 직접 입력해 주세요.','err'); return; }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({ audio:true });
+    const mime=pickMime();
+    EREC=new MediaRecorder(stream, mime?{ mimeType:mime }:undefined);
+    ECHUNKS=[]; ERECSEC=0; $('#eRecTime').textContent='0:00'; evmsg(''); $('#eTrBox').classList.add('hide');
+    EREC.ondataavailable=e=>{ if(e.data && e.data.size) ECHUNKS.push(e.data); };
+    EREC.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      clearInterval(ERECT); eRecUI(false);
+      const blob=new Blob(ECHUNKS,{ type:EREC.mimeType||'audio/webm' });
+      if(blob.size<1200){ evmsg('녹음이 너무 짧습니다. 다시 눌러서 말씀해 주세요.','err'); return; }
+      await sendExamVoice(blob);
+    };
+    EREC.start(); eRecUI(true); ERECT=setInterval(eRecTick,1000);
+  }catch(e){
+    evmsg(e.name==='NotAllowedError'?'마이크 사용이 차단돼 있습니다. 주소창의 자물쇠에서 마이크를 허용해 주세요.':'마이크를 열 수 없습니다: '+e.message,'err');
+  }
+};
+
+async function sendExamVoice(blob){
+  if(!CUR) return;
+  $('#eBtnRec').disabled=true; evmsg('시험 범위를 정리하는 중입니다… 20초쯤 걸립니다','work');
+  try{
+    const b64=await blobToB64(blob);
+    const s=CUR.students;
+    const { data, error }=await sb.functions.invoke('exam-parse',{
+      body:{ audio:b64, mime:(blob.type||'audio/webm').split(';')[0],
+             student:{ name:s.name, school:s.school, grade:s.grade } }
+    });
+    if(error) throw new Error(error.message||'요청 실패');
+    if(data?.error){
+      if(data.error==='NO_KEY') throw new Error('Gemini 키가 아직 등록되지 않았습니다. J님께 문의해 주세요.');
+      throw new Error(data.message||data.detail||data.error);
+    }
+    EBEFORE={ eT:$('#eT').value, eR:$('#eR').value, eC:$('#eC').value };
+    const ST={};
+    [['eT','exam_title',' · '],['eR','exam_range',SEP_R],['eC','exam_counsel',SEP_C]].forEach(([id,k,sep])=>{
+      const r=mergeVal($('#'+id).value, data[k], sep, EVM);
+      $('#'+id).value=r.v; ST[k]=r.st;
+    });
+    if(data.transcript){ $('#eTrText').textContent=data.transcript; $('#eTrBox').classList.remove('hide'); }
+    $('#carry').classList.add('hide'); DIRTY=true; drawCard();
+    const rp=mergeReport(ST);
+    const nLines=($('#eR').value||'').split('\n').filter(x=>x.trim()).length;
+    evmsg(rp.length ? `${rp.join(' · ')}. 시험 범위 ${nLines}줄. 확인하고 고쳐주세요.`
+                    : '내용을 찾지 못했습니다. 다시 말씀해 주세요.', rp.length?'':'err');
+    if(rp.length) eShowUndo();
+  }catch(e){
+    evmsg('실패: '+e.message,'err');
+  }finally{ $('#eBtnRec').disabled=false; }
+}
+function eShowUndo(){
+  const e=$('#eVoiceMsg'); if(!EBEFORE) return;
+  const b=document.createElement('button'); b.type='button'; b.textContent='되돌리기';
+  b.style.cssText='margin-left:10px;background:#fff;border:1.5px solid #bfe3d0;color:var(--sent);font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:7px';
+  b.onclick=()=>{ if(!EBEFORE) return;
+    $('#eT').value=EBEFORE.eT; $('#eR').value=EBEFORE.eR; $('#eC').value=EBEFORE.eC;
+    EBEFORE=null; DIRTY=true; drawCard(); evmsg('녹음 전으로 되돌렸습니다.'); };
+  e.append(' '); e.append(b);
+}
+/* 시험 녹음의 [전부 새로] */
+let EFRESHBAK=null;
+bindMode('eMode','eModeHint','evm',v=>EVM=v, v=>{
+  const ids=['eT','eR','eC'];
+  if(v==='fresh'){
+    if(EFRESHBAK){ evmsg('이미 비워져 있습니다. 되돌리려면 [이어서 채우기]를 누르세요.'); return; }
+    if(ids.some(id=>($('#'+id).value||'').trim())){
+      EFRESHBAK={}; ids.forEach(id=>{ EFRESHBAK[id]=$('#'+id).value; $('#'+id).value=''; });
+      DIRTY=true; drawCard();
+      evmsg('시험 칸을 비웠습니다. 녹음하면 새로 채워집니다. (이어서 채우기를 누르면 되돌아옵니다)');
+    }
+  }else if(EFRESHBAK){
+    if(ids.every(id=>!($('#'+id).value||'').trim())){
+      ids.forEach(id=>{ if(EFRESHBAK[id]!=null) $('#'+id).value=EFRESHBAK[id]; });
+      DIRTY=true; drawCard(); evmsg('지우기 전 내용으로 되돌렸습니다.'); EFRESHBAK=null;
+    }else evmsg('새로 적은 내용이 있어서 되돌리지 않았습니다. 칸을 비우고 다시 누르면 복구됩니다.');
+  }
+});
+
 function blobToB64(blob){ return new Promise((res,rej)=>{ const r=new FileReader();
   r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(blob); }); }
 
@@ -1618,16 +1742,8 @@ async function sendVoice(blob){
     BEFORE={ pG:$('#pG').value, pR:$('#pR').value, pL:$('#pL').value, pV:$('#pV').value,
              vCounsel:$('#vCounsel').value, eT:$('#eT').value, eR:$('#eR').value, eC:$('#eC').value };
     const ST={};
-    const MAP = KIND==='exam'
-      ? [['eR','prog_reading',SEP_C],['eC','counsel',SEP_C]]   // 시험 범위 · 대비 상황
-      : [['pG','prog_grammar',SEP_P],['pR','prog_reading',SEP_P],['pL','prog_listening',SEP_P],
-         ['pV','prog_vocab',SEP_P],['vCounsel','counsel',SEP_C]];
-    if(KIND==='exam'){
-      // 시험 모드에서는 진도로 잡힌 내용을 시험 범위 칸에 모아 넣는다
-      const rng=[data.prog_grammar,data.prog_reading,data.prog_listening,data.prog_vocab]
-                  .filter(Boolean).join('\n');
-      data={ ...data, prog_reading:rng };
-    }
+    const MAP = [['pG','prog_grammar',SEP_P],['pR','prog_reading',SEP_P],['pL','prog_listening',SEP_P],
+                 ['pV','prog_vocab',SEP_P],['vCounsel','counsel',SEP_C]];
     MAP.forEach(([id,k,sep])=>{
       const r=mergeVal($('#'+id).value, data[k], sep, VM);
       $('#'+id).value=r.v; ST[k]=r.st;
