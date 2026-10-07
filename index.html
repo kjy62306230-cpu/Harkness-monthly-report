@@ -219,7 +219,9 @@ a.linkbtn{text-decoration:none;display:inline-block}
 .chip.pack{background:var(--accent-soft);color:var(--accent-deep);border-color:transparent;font-weight:800}
 .chip.pack svg{width:14px;height:14px;margin-right:5px;vertical-align:-2px}
 .packTop{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
-.packTop select{padding:8px 11px;border:1px solid var(--sep);border-radius:var(--r-ctl);background:var(--surface-solid);font:inherit;font-size:13.5px}
+.packTop select{padding:8px 11px;border:1px solid var(--sep);border-radius:var(--r-ctl);background:var(--surface-solid);font:inherit;font-size:13.5px;color:var(--ink)}
+.packTop #packPeriod{font-weight:800;border-color:var(--acc);color:var(--acc)}
+.packTop select:disabled{opacity:.5}
 .packStat{font-size:13px;color:var(--ink3);margin-left:auto}
 .packStat b{color:var(--ink);font-weight:800}
 .pgrp{margin-bottom:18px}
@@ -769,7 +771,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v39</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v40</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -929,6 +931,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
     </div>
     <div class="mbody" id="packBody">
       <div class="packTop">
+        <select id="packPeriod"></select>
         <select id="packWho" class="hide"></select>
         <div class="packStat" id="packStat"></div>
       </div>
@@ -1086,7 +1089,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v39';
+const APP_VER = 'v40';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1681,8 +1684,25 @@ $('#chipPack').onclick=()=>{
     sel.innerHTML=packTeachers().map(t=>`<option value="${t.id}"${t.id===ME.id?' selected':''}>${esc(t.name)} 선생님</option>`).join('')
       + '<option value="all">선생님 전체</option>';
   } else { sel.classList.add('hide'); sel.innerHTML=''; }
+  fillPackPeriods();
   $('#pack').classList.remove('hide');
   buildPack();
+};
+function fillPackPeriods(){
+  const ps=$('#packPeriod'); ps.innerHTML=''; let p=ymNow();
+  for(let i=0;i<12;i++){ const o=document.createElement('option'); o.value=p; o.textContent=ymLabel(p); ps.append(o); p=ymPrev(p); }
+  ps.value=PERIOD;
+}
+$('#packPeriod').onchange=async()=>{
+  const ps=$('#packPeriod'); const v=ps.value;
+  if(v===PERIOD) return;
+  ps.disabled=true; pmsg2(`${ymLabel(v)} 불러오는 중…`,'work');
+  $('#packList').innerHTML='<p class="hint" style="margin:0">불러오는 중…</p>';
+  PERIOD=v;
+  const main=$('#selPeriod'); if(main) main.value=v;     // 뒤쪽 화면도 같이 맞춘다
+  try{ await load(); }catch(e){ pmsg2('불러오지 못했습니다: '+e.message,'err'); }
+  ps.disabled=false; ps.value=PERIOD;
+  buildPack(); pmsg2('');
 };
 $('#packWho').onchange=buildPack;
 $('#packClose').onclick=()=>$('#pack').classList.add('hide');
