@@ -771,7 +771,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v40</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v41</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -938,7 +938,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
       <div class="pfilt" id="packFilt">
         <button data-pf="done" class="on">✅ 발송 완료만</button>
         <button data-pf="todo">⚠️ 아직 안 보낸 학생만</button>
-        <button data-pf="all">전체</button>
+        <button data-pf="all">전체 보기</button>
       </div>
       <div id="packList"></div>
       <div class="voiceMsg hide" id="packMsg"></div>
@@ -1089,7 +1089,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v40';
+const APP_VER = 'v41';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1743,10 +1743,18 @@ function buildPack(){
       <button data-pall="${cls}">모두 ${cls==='done'?'선택':'해제'}</button></h4>
       ${arr.map(x=>row(x,PACK.indexOf(x))).join('')}</div>`;
 
+  const showDone = PACKFILT!=='todo';
+  const showRest = PACKFILT!=='done';
+  const shown = (showDone?done.length:0) + (showRest?rest.length:0);
+  const emptyMsg = !PACK.length
+    ? `${ymLabel(PERIOD)}에 학생이 없습니다.`
+    : (PACKFILT==='done' ? '발송 완료한 학생이 아직 없습니다. 위 [전체]를 눌러 보세요.'
+      : PACKFILT==='todo' ? '안 보낸 학생이 없습니다. 모두 발송 완료했습니다.'
+      : '이번 달 학생이 없습니다.');
   $('#packList').innerHTML =
-    grp('done','✅ 발송 완료', done) +
-    grp('todo','⚠️ 아직 안 보낸 학생', rest) +
-    (PACK.length?'':'<p class="hint" style="margin:0">이번 달 학생이 없습니다.</p>');
+    (showDone?grp('done','✅ 발송 완료', done):'') +
+    (showRest?grp('todo','⚠️ 아직 안 보낸 학생', rest):'') +
+    (shown?'':`<p class="hint" style="margin:0">${emptyMsg}</p>`);
 
   $$('#packList [data-pk]').forEach(c=>c.onchange=()=>{
     PACK[+c.dataset.pk].on=c.checked;
@@ -1756,6 +1764,9 @@ function buildPack(){
   $$('#packList [data-pv]').forEach(b=>b.onclick=()=>openOne(+b.dataset.pv));
   $$('#packFilt [data-pf]').forEach(b=>{
     b.classList.toggle('on', b.dataset.pf===PACKFILT);
+    const n = b.dataset.pf==='done'?done.length : b.dataset.pf==='todo'?rest.length : PACK.length;
+    const base = b.dataset.pf==='done'?'✅ 발송 완료만' : b.dataset.pf==='todo'?'⚠️ 아직 안 보낸 학생만' : '전체 보기';
+    b.textContent = `${base} ${n}`;
     b.onclick=()=>{ PACKFILT=b.dataset.pf; buildPack(); };
   });
   $$('#packList [data-pall]').forEach(b=>b.onclick=()=>{
