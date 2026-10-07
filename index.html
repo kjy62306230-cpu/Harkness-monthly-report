@@ -378,8 +378,9 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
 }
 .dfoot .btn{flex:1;min-width:0;white-space:nowrap}
 .dfoot{gap:7px}
-.dfoot #btnSave{flex:1}
-.dfoot #btnSent{flex:1.25}
+.dfoot #btnSave{flex:.8}
+.dfoot #btnFile{flex:1}
+.dfoot #btnSent{flex:.9}
 @media(max-width:430px){
   .dfoot{gap:6px;padding-left:12px;padding-right:12px}
   .dfoot .btn{font-size:13px;padding-left:6px;padding-right:6px;letter-spacing:-.04em}
@@ -417,6 +418,11 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
 }
 .pfilt button:hover{background:var(--fill)}
 .pfilt button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.mark{background:#1a9c6b;border-color:#1a9c6b;color:#fff}
+.btn.mark:hover{background:#16885d}
+.btn.mark:disabled{opacity:.45}
+#packFoot{flex-wrap:wrap}
+#packFoot .btn{flex:1 1 150px}
 
 /* ---------- 섹션 ---------- */
 .sec{margin-bottom:22px}
@@ -763,7 +769,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v38</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v39</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -874,7 +880,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
       <div class="actions">
         <button id="btnTxt">문구 복사</button>
       </div>
-      <p class="hint"><b>저장</b>은 내용만 저장합니다 (아직 미발송). 저장한 뒤 아래 기록의 <b>피드백 저장</b>으로 이미지·PDF 파일을 받을 수 있습니다.<br><b>저장 및 발송</b>을 눌러야 카톡 공유창이 열리고 <b>발송 완료</b>로 기록됩니다.<br>
+      <p class="hint"><b>저장</b> 내용만 저장 · <b>파일 저장</b> 이미지·PDF로 받기 — 둘 다 <u>발송 완료가 아닙니다</u>.<br><b>발송</b>을 눌러 실제로 보내야 <b>발송 완료</b>로 기록됩니다.<br>
       발송한 뒤 내용을 고치고 다시 저장하거나 발송하면, <b>이전 기록은 그대로 두고</b> 그 위에 새 기록이 쌓입니다.</p>
     </div>
 
@@ -884,8 +890,9 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
     </div>
   </div>
   <div class="dfoot">
-    <button class="btn ghost strong" id="btnSave">저장</button>
-    <button class="btn" id="btnSent">저장 및 발송</button>
+    <button class="btn ghost" id="btnSave">저장</button>
+    <button class="btn ghost strong" id="btnFile">파일 저장</button>
+    <button class="btn" id="btnSent">발송</button>
   </div>
 </aside>
 <div class="toast" id="toast"></div>
@@ -933,7 +940,8 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
       <div id="packList"></div>
       <div class="voiceMsg hide" id="packMsg"></div>
     </div>
-    <div class="dfoot">
+    <div class="dfoot" id="packFoot">
+      <button class="btn mark" id="packMark">✅ 발송 완료로 표시</button>
       <button class="btn ghost" id="packImg">이미지로 저장·공유</button>
       <button class="btn" id="packPdf">PDF로 저장·공유</button>
     </div>
@@ -1078,7 +1086,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v38';
+const APP_VER = 'v39';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1340,7 +1348,7 @@ function open(id){
   $('#eT').value=CUR.exam_title||''; $('#eR').value=CUR.exam_range||''; $('#eC').value=CUR.exam_counsel||'';
   applyKind(CUR.kind||'monthly', false);
   $('#carry').classList.toggle('hide',!carried);
-  $('#btnSent').textContent='저장 및 발송';
+  $('#btnSent').textContent='발송';
   VM='merge'; FRESHBAK=null;
   $$('#vMode button').forEach(b=>b.classList.toggle('on', b.dataset.vm==='merge'));
   $('#vModeHint').textContent=HINT_MERGE;
@@ -1744,6 +1752,10 @@ function packCount(){
   $('#packImg').disabled=!n; $('#packPdf').disabled=!n;
   $('#packImg').textContent=n?`이미지로 저장·공유 (${n})`:'이미지로 저장·공유';
   $('#packPdf').textContent=n?`PDF로 저장·공유 (${n})`:'PDF로 저장·공유';
+  const todo=PACK.filter(x=>x.on && x.rec.status!=='sent').length;
+  const mk=$('#packMark');
+  mk.disabled=!todo;
+  mk.textContent = todo ? `✅ 발송 완료로 표시 (${todo})` : '✅ 발송 완료로 표시';
   pmsg2('');
 }
 
@@ -1891,6 +1903,31 @@ $('#packImg').onclick=async()=>{
     pmsg2(`${list.length}명을 한 장으로 저장했습니다.`);
   }catch(e){ pmsg2('실패: '+e.message,'err'); }
   finally{ b.disabled=false; b.textContent=lbl; }
+};
+
+/* ---- 선택한 학생 한 번에 발송 완료로 표시 ---- */
+$('#packMark').onclick=async()=>{
+  const list=PACK.filter(x=>x.on && x.rec.status!=='sent');
+  if(!list.length) return;
+  const names=list.slice(0,6).map(x=>x.rec.students.name).join(', ')+(list.length>6?` 외 ${list.length-6}명`:'');
+  if(!confirm(`아래 ${list.length}명을 발송 완료로 표시합니다.\n\n${names}\n\n카톡으로 이미 보내신 학생만 체크해 주세요.`)) return;
+
+  const b=$('#packMark'); const lbl=b.textContent; b.disabled=true; b.textContent='처리 중…';
+  pmsg2(`${list.length}명을 발송 완료로 바꾸는 중…`,'work');
+  const now=new Date().toISOString();
+  let done=0, fail=0;
+  for(const x of list){
+    const { data, error }=await sb.from('feedback_records')
+      .update({ status:'sent', sent_at:now })
+      .eq('id', x.rec.id).select(SEL).single();
+    if(error){ fail++; continue; }
+    const i=ROWS.findIndex(r=>r.id===x.rec.id); if(i>=0) ROWS[i]=data;
+    x.rec=data; done++;
+    b.textContent=`${done} / ${list.length}`;
+  }
+  render(); buildPack();
+  pmsg2(fail ? `${done}명 완료 · ${fail}명 실패했습니다. 다시 시도해 주세요.` : `${done}명을 발송 완료로 표시했습니다.`, fail?'err':'');
+  b.disabled=false; if(!$('#packMark').textContent.includes('표시')) b.textContent=lbl;
 };
 
 /* ---- 전체 → PDF ---- */
@@ -2394,7 +2431,7 @@ function sentGuard(){
     return confirm('이미 발송 완료로 기록돼 있습니다.\n다시 저장하고 새 기록을 남길까요?');
   return true;
 }
-window.openSavePick=()=>openPick('save');   // 기록 카드의 [피드백 저장] 에서 호출
+$('#btnFile').onclick=()=>openPick('save');   // 파일만 받는다. 발송 상태는 안 건드림
 $('#btnSent').onclick=()=>{ if(sentGuard()) openPick('send'); };
 
 async function buildCardBlob(kind){
@@ -2528,7 +2565,7 @@ async function loadHistory(){
 
   const tot=LOGS.length+(isDraft?1:0);
   $('#histCnt').textContent=tot?`· ${LOGS.length}건 발송${isDraft?' · 저장 1건':''}`:'';
-  if(!tot){ $('#histWrap').innerHTML='<p class="hint" style="margin:0">아직 기록이 없습니다. <b>저장</b>하거나 <b>저장 및 발송</b>하면 여기에 남습니다.</p>'; return; }
+  if(!tot){ $('#histWrap').innerHTML='<p class="hint" style="margin:0">아직 기록이 없습니다. <b>저장</b>하거나 <b>발송</b>하면 여기에 남습니다.</p>'; return; }
   $('#histWrap').innerHTML=draftHTML+LOGS.map((r,i)=>{
     const P=[['문법',r.prog_grammar],['독해',r.prog_reading],['듣기',r.prog_listening],['단어시험',r.prog_vocab]].filter(x=>x[1]);
     const pv=(r.counsel||P.map(x=>x[1]).join(' · ')||'—').replace(/\n/g,' ');
