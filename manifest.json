@@ -2,7 +2,7 @@
   "name": "하크니스 월간 학습 리포트",
   "short_name": "하크니스",
   "description": "하크니스영어학원 학부모 월간 학습 리포트 보드",
-  "start_url": "./?v=36",
+  "start_url": "./?v=37",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

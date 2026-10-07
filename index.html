@@ -377,10 +377,14 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
   -webkit-backdrop-filter:var(--blurbg); backdrop-filter:var(--blurbg);
 }
 .dfoot .btn{flex:1;min-width:0;white-space:nowrap}
-.dfoot #btnSave{flex:.85}
-.dfoot #btnSaveAs{flex:1.15}
-.dfoot #btnSent{flex:1}
-@media(max-width:420px){ .dfoot .btn{font-size:14px;padding-left:8px;padding-right:8px} }
+.dfoot{gap:7px}
+.dfoot #btnSave{flex:.8}
+.dfoot #btnSaveAs{flex:1}
+.dfoot #btnSent{flex:1.1}
+@media(max-width:430px){
+  .dfoot{gap:6px;padding-left:12px;padding-right:12px}
+  .dfoot .btn{font-size:13px;padding-left:6px;padding-right:6px;letter-spacing:-.04em}
+}
 .btn.ghost.strong{font-weight:800;border-color:var(--line2,var(--sep));color:var(--acc)}
 /* 저장 형식 고르기 */
 .pick{display:flex;flex-direction:column;gap:10px}
@@ -755,7 +759,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v36</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v37</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -866,8 +870,8 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
       <div class="actions">
         <button id="btnTxt">문구 복사</button>
       </div>
-      <p class="hint">아래 <b>발송</b>을 누르면 이미지 / PDF를 고릅니다. 폰이면 카톡 공유창이 바로 뜨고, PC면 파일로 내려받아집니다.<br>
-      발송한 뒤 내용을 고치고 다시 <b>발송</b>을 누르면, <b>이전 기록은 그대로 두고</b> 그 위에 새 기록이 쌓입니다.</p>
+      <p class="hint"><b>피드백 저장</b>은 파일로만 받고, <b>저장 및 발송</b>은 파일을 받으면서 카톡 공유창까지 엽니다.<br>둘 다 끝나면 <b>발송 완료</b>로 기록됩니다.<br>
+      발송한 뒤 내용을 고치고 다시 저장하거나 발송하면, <b>이전 기록은 그대로 두고</b> 그 위에 새 기록이 쌓입니다.</p>
     </div>
 
     <div class="sec">
@@ -878,7 +882,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <div class="dfoot">
     <button class="btn ghost" id="btnSave">임시저장</button>
     <button class="btn ghost strong" id="btnSaveAs">피드백 저장</button>
-    <button class="btn" id="btnSent">발송</button>
+    <button class="btn" id="btnSent">저장 및 발송</button>
   </div>
 </aside>
 <div class="toast" id="toast"></div>
@@ -1071,7 +1075,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v36';
+const APP_VER = 'v37';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1333,7 +1337,7 @@ function open(id){
   $('#eT').value=CUR.exam_title||''; $('#eR').value=CUR.exam_range||''; $('#eC').value=CUR.exam_counsel||'';
   applyKind(CUR.kind||'monthly', false);
   $('#carry').classList.toggle('hide',!carried);
-  $('#btnSent').textContent='발송';
+  $('#btnSent').textContent='저장 및 발송';
   VM='merge'; FRESHBAK=null;
   $$('#vMode button').forEach(b=>b.classList.toggle('on', b.dataset.vm==='merge'));
   $('#vModeHint').textContent=HINT_MERGE;
@@ -2364,8 +2368,9 @@ function openPick(mode){
   if(!hasContent()){ toast('내용을 먼저 입력해 주세요'); return; }
   PICKMODE=mode; PICKBLOB=null;
   const send=mode==='send';
-  $('#pickTitle').textContent = (send && !isMobile()) ? '어떤 파일로 내려받을까요?'
-                              : (send ? '어떤 파일로 보낼까요?' : '어떻게 저장할까요?');
+  $('#pickTitle').textContent = send
+    ? (isMobile() ? '어떤 파일로 보낼까요?' : '어떤 파일로 내려받을까요?')
+    : '어떤 파일로 저장할까요?';
   $('#pickSub').textContent   = `${CUR.students.name} 학생 · ${ymLabel(PERIOD)}`;
   $('#pickImgT').textContent  = (send && !pc) ? '이미지로 보내기' : '이미지로 저장';
   const pc=!isMobile();
@@ -2381,13 +2386,13 @@ function openPick(mode){
   $('#pickImg').disabled=false; $('#pickPdf').disabled=false;
   pickmsg(''); $('#savePick').classList.remove('hide');
 }
-$('#btnSaveAs').onclick=()=>openPick('save');
-$('#btnSent').onclick=()=>{
-  if(CUR && CUR.status==='sent' && !DIRTY){
-    if(!confirm('이미 발송 기록이 있습니다. 다시 보내고 새 기록을 남길까요?')) return;
-  }
-  openPick('send');
-};
+function sentGuard(){
+  if(CUR && CUR.status==='sent' && !DIRTY)
+    return confirm('이미 발송 완료로 기록돼 있습니다.\n다시 저장하고 새 기록을 남길까요?');
+  return true;
+}
+$('#btnSaveAs').onclick=()=>{ if(sentGuard()) openPick('save'); };
+$('#btnSent').onclick=()=>{ if(sentGuard()) openPick('send'); };
 
 async function buildCardBlob(kind){
   await drawCard();
@@ -2402,14 +2407,15 @@ async function buildCardBlob(kind){
   return { blob:doc.output('blob'), name:fileName().replace(/\.png$/,'.pdf') };
 }
 
-/* 발송 완료로 기록 */
-async function markSent(){
+/* 발송 완료로 기록 — 저장만 해도 완료로 잡는다 */
+async function markSent(mode){
   const again=LOGS.length>0;
   await save('sent', true);
   await loadHistory();
   closePick();
   await close();
-  toast(again?'새 기록으로 남겼습니다':'발송 완료로 기록했습니다');
+  toast(again ? '새 기록으로 남겼습니다'
+       : (mode==='save' ? '저장했습니다 · 발송 완료로 기록했습니다' : '발송 완료로 기록했습니다'));
 }
 
 async function runPick(kind){
@@ -2441,14 +2447,10 @@ async function runPick(kind){
       return;
     }
 
-    // 저장만
+    // 피드백 저장 — 파일로 받고, 완료로 기록
     const ok=await shareOrSave(blob,name,title);
     if(!ok){ pickmsg(''); return; }
-    await save('drafted', true);
-    closePick();
-    toast(isMobile()
-      ? (kind==='img'?'저장했습니다. 카톡으로 보낸 뒤 [발송]을 눌러주세요':'PDF로 저장했습니다')
-      : (kind==='img'?'내려받기 폴더에 이미지로 저장했습니다':'내려받기 폴더에 PDF로 저장했습니다'));
+    await markSent('save');
   }catch(e){ pickmsg('실패: '+e.message,'err'); }
   finally{ b.disabled=false; other.disabled=false; }
 }
@@ -2596,7 +2598,7 @@ async function save(status,silent){
   if(!silent) await close();
   return data;
 }
-$('#btnSave').onclick=async()=>{ await save('drafted', true); await loadHistory(); toast('임시저장했습니다. 아래 기록에서 이어서 쓸 수 있어요'); };
+$('#btnSave').onclick=async()=>{ await save('drafted', true); await loadHistory(); toast('임시저장했습니다. 아직 발송 전이고, 아래 기록에서 이어서 쓸 수 있어요'); };
 
 
 /* ==================== 관리 ==================== */
