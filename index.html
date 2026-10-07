@@ -377,7 +377,10 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
   -webkit-backdrop-filter:var(--blurbg); backdrop-filter:var(--blurbg);
 }
 .dfoot .btn{flex:1;min-width:0;white-space:nowrap}
-.dfoot #btnSent{flex:1.25}
+.dfoot #btnSave{flex:.85}
+.dfoot #btnSaveAs{flex:1.15}
+.dfoot #btnSent{flex:1}
+@media(max-width:420px){ .dfoot .btn{font-size:14px;padding-left:8px;padding-right:8px} }
 .btn.ghost.strong{font-weight:800;border-color:var(--line2,var(--sep));color:var(--acc)}
 /* 저장 형식 고르기 */
 .pick{display:flex;flex-direction:column;gap:10px}
@@ -517,6 +520,18 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
 
 /* ---------- 발송 기록 ---------- */
 .hist-i{background:var(--surface-solid);border:1px solid var(--sep);border-radius:var(--r-card);margin-bottom:8px;overflow:hidden}
+.hist-i.draft{border-color:#f0b429;background:color-mix(in srgb, #f0b429 7%, var(--surface-solid))}
+.hist-i.draft .dtag{
+  display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;
+  padding:3px 9px;border-radius:999px;background:#f0b429;color:#3a2a00;
+  font-size:11px;font-weight:800;letter-spacing:-.01em
+}
+.hist-i.draft .cont{
+  display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+  margin-top:10px;padding:11px;border-radius:12px;border:1px solid #f0b429;
+  background:#f0b429;color:#3a2a00;font-size:13.5px;font-weight:800;cursor:pointer
+}
+.hist-i.draft .cont svg{width:15px;height:15px}
 .hist-r{display:flex;align-items:stretch}
 .hist-t{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:12px 14px;text-align:left;transition:background .15s}
 .histE{flex:0 0 auto;width:42px;border:0;border-left:1px solid var(--sep);background:transparent;
@@ -740,7 +755,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v35</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v36</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -851,18 +866,18 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
       <div class="actions">
         <button id="btnTxt">문구 복사</button>
       </div>
-      <p class="hint">아래 <b>발송</b>을 누르면 이미지 / PDF를 고르고, 카톡으로 바로 보낸 뒤 <b>발송 완료</b>로 기록됩니다.<br>
+      <p class="hint">아래 <b>발송</b>을 누르면 이미지 / PDF를 고릅니다. 폰이면 카톡 공유창이 바로 뜨고, PC면 파일로 내려받아집니다.<br>
       발송한 뒤 내용을 고치고 다시 <b>발송</b>을 누르면, <b>이전 기록은 그대로 두고</b> 그 위에 새 기록이 쌓입니다.</p>
     </div>
 
     <div class="sec">
-      <h3>발송 기록 <small id="histCnt"></small></h3>
+      <h3>작성 · 발송 기록 <small id="histCnt"></small></h3>
       <div id="histWrap"><p class="hint" style="margin:0">불러오는 중…</p></div>
     </div>
   </div>
   <div class="dfoot">
     <button class="btn ghost" id="btnSave">임시저장</button>
-    <button class="btn ghost strong" id="btnSaveAs">저장</button>
+    <button class="btn ghost strong" id="btnSaveAs">피드백 저장</button>
     <button class="btn" id="btnSent">발송</button>
   </div>
 </aside>
@@ -938,7 +953,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
         </button>
       </div>
       <div class="pconf hide" id="pickConf">
-        <p>파일을 받으셨습니다. 카톡으로 학부모께 보내셨나요?</p>
+        <p id="pickConfT">파일을 받으셨습니다. 카톡으로 학부모께 보내셨나요?</p>
         <div class="pconfR">
           <button class="btn ghost" id="pickNo" type="button">아직이요</button>
           <button class="btn" id="pickYes" type="button">보냈어요 · 발송 완료</button>
@@ -1056,7 +1071,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v35';
+const APP_VER = 'v36';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1319,6 +1334,9 @@ function open(id){
   applyKind(CUR.kind||'monthly', false);
   $('#carry').classList.toggle('hide',!carried);
   $('#btnSent').textContent='발송';
+  VM='merge'; FRESHBAK=null;
+  $$('#vMode button').forEach(b=>b.classList.toggle('on', b.dataset.vm==='merge'));
+  $('#vModeHint').textContent=HINT_MERGE;
   stamp();
   stopRec(); vmsg(''); $('#trBox').classList.add('hide'); $('#recTime').textContent='0:00'; BEFORE=null;
   pmsg(''); $('#chgBox').classList.add('hide'); PBEFORE=null;
@@ -1442,7 +1460,7 @@ let REC=null, CHUNKS=[], RECT=null, RECSEC=0, BEFORE=null;
 let VM='merge', MVM='merge';
 const SEP_P=' / ', SEP_C='\n\n';
 const HINT_MERGE='빈 칸만 채웁니다. 이미 적힌 칸에 새 내용이 나오면 뒤에 덧붙입니다.';
-const HINT_FRESH='말씀하신 칸을 통째로 새로 씁니다. 기존 내용은 지워집니다.';
+const HINT_FRESH='지금 적힌 내용을 비우고 처음부터 씁니다. 되돌리려면 [이어서 채우기]를 누르세요.';
 const nrm=v=>String(v||'').replace(/\s+/g,'').toLowerCase();
 function mergeVal(ov,nv,sep,mode){
   ov=String(ov||'').trim(); nv=String(nv||'').trim();
@@ -1461,7 +1479,7 @@ function mergeReport(st){
   if(!out.length && c('dup')) out.push('이미 적혀 있는 내용이었습니다');
   return out;
 }
-function bindMode(boxId,hintId,attr,set){
+function bindMode(boxId,hintId,attr,set,after){
   const box=document.getElementById(boxId); if(!box) return;
   box.querySelectorAll('button').forEach(b=>{
     b.onclick=()=>{
@@ -1469,10 +1487,34 @@ function bindMode(boxId,hintId,attr,set){
       set(v);
       box.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
       document.getElementById(hintId).textContent = v==='merge' ? HINT_MERGE : HINT_FRESH;
+      if(after) after(v);
     };
   });
 }
-bindMode('vMode','vModeHint','vm',v=>VM=v);
+
+/* [전부 새로] 를 고르면 작성 칸을 그 자리에서 비운다.
+   되돌릴 수 있게 직전 내용을 들고 있다가 [이어서 채우기] 로 돌아오면 복구. */
+let FRESHBAK=null;
+function vModeSwitch(v){
+  if(v==='fresh'){
+    const had=F.some(id=>($('#'+id).value||'').trim());
+    if(had){
+      FRESHBAK={}; F.forEach(id=>{ FRESHBAK[id]=$('#'+id).value; $('#'+id).value=''; });
+      DIRTY=true; drawCard();
+      vmsg('작성 칸을 비웠습니다. 녹음하면 새로 채워집니다. (이어서 채우기를 누르면 되돌아옵니다)');
+    }
+  }else{
+    if(FRESHBAK){
+      const empty=F.every(id=>!($('#'+id).value||'').trim());
+      if(empty){
+        F.forEach(id=>{ if(FRESHBAK[id]!=null) $('#'+id).value=FRESHBAK[id]; });
+        DIRTY=true; drawCard(); vmsg('지우기 전 내용으로 되돌렸습니다.');
+      }
+      FRESHBAK=null;
+    }
+  }
+}
+bindMode('vMode','vModeHint','vm',v=>VM=v, vModeSwitch);
 bindMode('mMode','mModeHint','mvm',v=>MVM=v);
 function pickMime(){
   for(const m of ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/aac','audio/ogg']){
@@ -1713,9 +1755,22 @@ $('#oneSave').onclick=async()=>{
   const blob=await new Promise(r=>$('#oneCv').toBlob(r,'image/png'));
   await shareOrSave(blob, `${x.rec.students.name}_${PERIOD}_학습리포트.png`, x.rec.students.name+' 학습 리포트');
 };
+/* 폰·태블릿에서만 공유창을 띄운다. PC 는 곧바로 파일로 내려받기 */
+function isMobile(){
+  try{
+    if(navigator.userAgentData && typeof navigator.userAgentData.mobile==='boolean') return navigator.userAgentData.mobile;
+  }catch(e){}
+  const ua=navigator.userAgent||'';
+  if(/iPad|iPhone|iPod|Android|Mobile|Silk|Kindle/i.test(ua)) return true;
+  if(/Macintosh/.test(ua) && navigator.maxTouchPoints>1) return true;   // iPadOS
+  return false;
+}
+function canShareFiles(file){
+  return isMobile() && !!navigator.canShare && navigator.canShare({files:[file]});
+}
 async function shareOrSave(blob,name,title){
   const file=new File([blob],name,{type:blob.type});
-  if(navigator.canShare && navigator.canShare({files:[file]})){
+  if(canShareFiles(file)){
     try{ await navigator.share({files:[file],title}); return true; }
     catch(e){ if(e.name==='AbortError') return false; }
   }
@@ -2309,14 +2364,18 @@ function openPick(mode){
   if(!hasContent()){ toast('내용을 먼저 입력해 주세요'); return; }
   PICKMODE=mode; PICKBLOB=null;
   const send=mode==='send';
-  $('#pickTitle').textContent = send ? '어떤 파일로 보낼까요?' : '어떻게 저장할까요?';
+  $('#pickTitle').textContent = (send && !isMobile()) ? '어떤 파일로 내려받을까요?'
+                              : (send ? '어떤 파일로 보낼까요?' : '어떻게 저장할까요?');
   $('#pickSub').textContent   = `${CUR.students.name} 학생 · ${ymLabel(PERIOD)}`;
-  $('#pickImgT').textContent  = send ? '이미지로 보내기' : '이미지로 저장';
-  $('#pickImgD').textContent  = send ? '카톡 대화창에 사진으로 들어갑니다. 가장 많이 쓰는 방법이에요.'
-                                     : '카톡으로 바로 보내기 좋습니다. 가장 많이 쓰는 방법이에요.';
-  $('#pickPdfT').textContent  = send ? 'PDF로 보내기' : 'PDF로 저장';
-  $('#pickPdfD').textContent  = send ? '카톡에 파일로 들어갑니다. 보관·인쇄하기 좋아요.'
-                                     : '문서로 보관하거나 인쇄할 때 쓰세요.';
+  $('#pickImgT').textContent  = (send && !pc) ? '이미지로 보내기' : '이미지로 저장';
+  const pc=!isMobile();
+  $('#pickImgD').textContent  = pc ? 'PNG 파일로 내려받습니다. 카톡 대화창에 끌어다 놓으면 됩니다.'
+                            : (send ? '카톡 대화창에 사진으로 들어갑니다. 가장 많이 쓰는 방법이에요.'
+                                    : '카톡으로 바로 보내기 좋습니다. 가장 많이 쓰는 방법이에요.');
+  $('#pickPdfT').textContent  = (send && !pc) ? 'PDF로 보내기' : 'PDF로 저장';
+  $('#pickPdfD').textContent  = pc ? 'PDF 파일로 내려받습니다. 보관·인쇄하기 좋아요.'
+                            : (send ? '카톡에 파일로 들어갑니다. 보관·인쇄하기 좋아요.'
+                                    : '문서로 보관하거나 인쇄할 때 쓰세요.');
   $('#pickOnly').classList.toggle('hide', !send);
   $('#pickConf').classList.add('hide');
   $('#pickImg').disabled=false; $('#pickPdf').disabled=false;
@@ -2365,7 +2424,7 @@ async function runPick(kind){
     const file=new File([blob],name,{type:blob.type});
 
     if(PICKMODE==='send'){
-      if(navigator.canShare && navigator.canShare({files:[file]})){
+      if(canShareFiles(file)){
         pickmsg('보낼 앱을 골라주세요. 카톡을 선택하면 됩니다.','work');
         try{
           await navigator.share({ files:[file], title });
@@ -2377,7 +2436,7 @@ async function runPick(kind){
         }
       }
       download(blob,name);
-      pickmsg('');
+      pickmsg(isMobile()?'':'내려받기 폴더에 저장했습니다. PC 카톡으로 보내신 뒤 아래를 눌러주세요.');
       $('#pickConf').classList.remove('hide');     // 보냈는지 확인 받기
       return;
     }
@@ -2387,7 +2446,9 @@ async function runPick(kind){
     if(!ok){ pickmsg(''); return; }
     await save('drafted', true);
     closePick();
-    toast(kind==='img'?'저장했습니다. 카톡으로 보낸 뒤 [발송]을 눌러주세요':'PDF로 저장했습니다');
+    toast(isMobile()
+      ? (kind==='img'?'저장했습니다. 카톡으로 보낸 뒤 [발송]을 눌러주세요':'PDF로 저장했습니다')
+      : (kind==='img'?'내려받기 폴더에 이미지로 저장했습니다':'내려받기 폴더에 PDF로 저장했습니다'));
   }catch(e){ pickmsg('실패: '+e.message,'err'); }
   finally{ b.disabled=false; other.disabled=false; }
 }
@@ -2432,9 +2493,31 @@ async function loadHistory(){
   if(!CUR || CUR.student_id!==sid) return;
   if(error){ $('#histWrap').innerHTML='<p class="hint" style="margin:0">기록을 불러오지 못했습니다.</p>'; return; }
   LOGS=data||[]; stamp();
-  $('#histCnt').textContent=LOGS.length?`· ${LOGS.length}건`:'';
-  if(!LOGS.length){ $('#histWrap').innerHTML='<p class="hint" style="margin:0">아직 발송 기록이 없습니다. <b>발송 완료</b>를 누르면 여기에 남습니다.</p>'; return; }
-  $('#histWrap').innerHTML=LOGS.map((r,i)=>{
+
+  /* 임시저장(작성 중) — 발송 전 내용도 여기에 남긴다 */
+  const df=recFields(CUR);
+  const isDraft = CUR.status!=='sent' && hasAny(df);
+  let draftHTML='';
+  if(isDraft){
+    const DP=[['문법',df.prog_grammar],['독해',df.prog_reading],['듣기',df.prog_listening],['단어시험',df.prog_vocab]].filter(x=>x[1]);
+    const dtxt=(df.kind==='exam' ? (df.exam_counsel||df.exam_range) : (df.counsel||DP.map(x=>x[1]).join(' · ')))||'—';
+    draftHTML=`<div class="hist-i draft">
+      <div class="hist-r">
+        <button class="hist-t" data-h="d"><span class="dtag">임시저장</span><b>${ymLabel(PERIOD)}</b><span class="pv">${esc(String(dtxt).replace(/\n/g,' '))}</span><span class="ar">▾</span></button>
+      </div>
+      <div class="hist-b hide" id="hbd">
+        <p class="hint" style="margin:10px 0 0">마지막 저장 ${esc(fmtTs(CUR.drafted_at||CUR.updated_at))} · 아직 보내지 않았습니다</p>
+        ${df.kind==='exam'
+          ? `${df.exam_title?`<dl><dt>시험</dt><dd>${esc(df.exam_title)}</dd></dl>`:''}${df.exam_range?`<div class="cs">${esc(df.exam_range)}</div>`:''}${df.exam_counsel?`<div class="cs">${esc(df.exam_counsel)}</div>`:''}`
+          : `${DP.length?`<dl>${DP.map(([k,v2])=>`<dt>${k}</dt><dd>${esc(v2)}</dd>`).join('')}</dl>`:''}${df.counsel?`<div class="cs">${esc(df.counsel)}</div>`:''}`}
+        <button class="cont" id="contDraft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>이어서 작성하기</button>
+      </div></div>`;
+  }
+
+  const tot=LOGS.length+(isDraft?1:0);
+  $('#histCnt').textContent=tot?`· ${LOGS.length}건 발송${isDraft?' · 임시저장 1건':''}`:'';
+  if(!tot){ $('#histWrap').innerHTML='<p class="hint" style="margin:0">아직 기록이 없습니다. <b>임시저장</b>하거나 <b>발송</b>하면 여기에 남습니다.</p>'; return; }
+  $('#histWrap').innerHTML=draftHTML+LOGS.map((r,i)=>{
     const P=[['문법',r.prog_grammar],['독해',r.prog_reading],['듣기',r.prog_listening],['단어시험',r.prog_vocab]].filter(x=>x[1]);
     const pv=(r.counsel||P.map(x=>x[1]).join(' · ')||'—').replace(/\n/g,' ');
     const ver=r.version>1?`<span class="vtag">${r.version}차 수정</span>`:'';
@@ -2453,9 +2536,21 @@ async function loadHistory(){
       </div></div>`;
   }).join('');
   $$('#histWrap .hist-t').forEach(t=>t.onclick=()=>{
-    const body=$('#hb'+t.dataset.h); const op=!body.classList.contains('hide');
+    const body=$('#hb'+t.dataset.h); if(!body) return;
+    const op=!body.classList.contains('hide');
     body.classList.toggle('hide',op); t.querySelector('.ar').textContent=op?'▾':'▴';
   });
+  const cd=$('#contDraft');
+  if(cd) cd.onclick=()=>{
+    const f=recFields(CUR);
+    $('#pG').value=f.prog_grammar||''; $('#pR').value=f.prog_reading||''; $('#pL').value=f.prog_listening||'';
+    $('#pV').value=f.prog_vocab||''; $('#vCounsel').value=f.counsel||'';
+    $('#eT').value=f.exam_title||''; $('#eR').value=f.exam_range||''; $('#eC').value=f.exam_counsel||'';
+    applyKind(f.kind||'monthly', false);
+    $('#carry').classList.add('hide'); DIRTY=false; drawCard();
+    $('.dbody').scrollTo({ top:0, behavior:'smooth' });
+    toast('임시저장한 내용을 불러왔습니다. 이어서 쓰시면 됩니다');
+  };
   $$('#histWrap .delv, #histWrap .histX').forEach(b=>b.onclick=async()=>{
     const r=LOGS[+b.dataset.d];
     const label=`${ymLabel(r.period)}${r.version>1?' '+r.version+'차 수정':''} 기록`;
@@ -2501,7 +2596,7 @@ async function save(status,silent){
   if(!silent) await close();
   return data;
 }
-$('#btnSave').onclick=async()=>{ await save('drafted'); toast('임시저장했습니다'); };
+$('#btnSave').onclick=async()=>{ await save('drafted', true); await loadHistory(); toast('임시저장했습니다. 아래 기록에서 이어서 쓸 수 있어요'); };
 
 
 /* ==================== 관리 ==================== */
