@@ -209,6 +209,13 @@ a.linkbtn{text-decoration:none;display:inline-block}
 .regWarn{margin-top:12px;border-left:3px solid var(--amber-solid);background:var(--amber-soft);
   border-radius:0 10px 10px 0;padding:12px 15px;font-size:13px;line-height:1.75;color:var(--ink2)}
 .regWarn b{color:var(--ink);font-weight:800}
+.kindSw{display:flex;gap:2px;background:var(--fill);padding:3px;border-radius:11px}
+.kindSw button{flex:1;border:0;background:transparent;color:var(--ink3);font:inherit;font-size:13.5px;
+  font-weight:700;padding:9px 10px;border-radius:9px;cursor:pointer;letter-spacing:-.02em;
+  transition:background .18s ease,color .18s ease}
+.kindSw button.on{background:var(--surface-solid);color:var(--ink);font-weight:800;
+  box-shadow:0 .5px 1px rgba(16,20,40,.06),0 2px 6px -2px rgba(16,20,40,.18)}
+.kindSw button[data-kind="exam"].on{color:var(--coral)}
 .chip.pack{background:var(--accent-soft);color:var(--accent-deep);border-color:transparent;font-weight:800}
 .chip.pack svg{width:14px;height:14px;margin-right:5px;vertical-align:-2px}
 .packTop{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
@@ -693,7 +700,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v32</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v33</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -759,7 +766,24 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
       <details class="tr hide" id="trBox"><summary>받아쓴 내용 보기</summary><div id="trText"></div></details>
     </div>
 
-    <div class="sec">
+    <div class="sec" id="secKind">
+      <div class="kindSw" id="kindSw">
+        <button type="button" data-kind="monthly" class="on">월간 진도</button>
+        <button type="button" data-kind="exam">시험대비</button>
+      </div>
+      <p class="hint" id="kindHint" style="margin-top:8px">한 달 수업 내용을 학부모께 알리는 기본 리포트입니다.</p>
+    </div>
+
+    <div class="sec" id="secExam" hidden>
+      <h3>시험 정보</h3>
+      <div class="prog">
+        <label><span>시험명</span><input id="eT" placeholder="예: 2학기 중간고사"></label>
+      </div>
+      <textarea class="ta" id="eR" placeholder="시험 범위를 적어주세요.&#10;예) 영어 교과서 Lesson 5~6 · 부교재 3800제 CH7~9&#10;    모의고사 3월·6월 · 외부지문 20선&#10;줄바꿈 그대로 카드에 들어갑니다." style="margin-top:9px"></textarea>
+      <p class="hint">학교·과목·단원·부교재까지 적어두시면 학부모가 바로 이해합니다.</p>
+    </div>
+
+    <div class="sec" id="secProg">
       <h3>이번 달 진도 <small>· 비워두면 카드에서 빠집니다</small></h3>
       <div class="prog">
         <label><span>문법</span><input id="pG" placeholder="예: 3800제 CH7~9 관계사·분사"></label>
@@ -769,8 +793,9 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
       </div>
       <p class="hint">점수는 적지 않습니다. 월말평가가 연결되면 자동으로 들어갑니다.</p>
     </div>
-    <div class="sec">
-      <h3>학부모 상담 · 피드백</h3>
+    <div class="sec" id="secCounsel">
+      <h3 id="counselH">학부모 상담 · 피드백</h3>
+      <textarea class="ta hide" id="eC" placeholder="시험 대비를 어떻게 하고 있는지, 집에서 봐주시면 좋을 점을 적어주세요. 줄바꿈 그대로 카드에 들어갑니다."></textarea>
       <textarea class="ta" id="vCounsel" placeholder="이번 달 수업에서 본 것, 잘한 점, 집에서 봐주시면 좋을 점을 편하게 적어주세요. 줄바꿈 그대로 카드에 들어갑니다."></textarea>
       <div class="polishRow">
         <button class="polishBtn" id="btnPolish" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3v4M3 5h4M6 17v4m-2-2h4"/><path d="M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5L13 3z"/></svg>학부모 톤으로 다듬기</button>
@@ -954,7 +979,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v32';
+const APP_VER = 'v33';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1201,17 +1226,20 @@ $$('.chip[data-f]').forEach(c=>c.onclick=()=>{ $$('.chip[data-f]').forEach(x=>x.
 $('#q').oninput=e=>{ QUERY=e.target.value.trim(); render(); };
 
 /* ==================== 드로어 ==================== */
-const F=['pG','pR','pL','pV','vCounsel'];
+const F=['pG','pR','pL','pV','vCounsel','eT','eR','eC'];
+let KIND='monthly';
 function open(id){
   CUR=ROWS.find(r=>r.id===id); if(!CUR) return; const s=CUR.students;
   $('#dName').textContent=s.name;
   $('#dMeta').textContent=[s.school,s.grade,s.class_label].filter(Boolean).join(' · ')+' · '+ymLabel(PERIOD);
-  const empty=!(CUR.prog_grammar||CUR.prog_reading||CUR.prog_listening||CUR.prog_vocab||CUR.counsel);
+  const empty=!(CUR.prog_grammar||CUR.prog_reading||CUR.prog_listening||CUR.prog_vocab||CUR.counsel||CUR.exam_range||CUR.exam_counsel);
   const pv=PREV[CUR.student_id];
   const carried=empty && CUR.status==='todo' && pv && (pv.prog_grammar||pv.prog_reading||pv.prog_listening||pv.prog_vocab||pv.counsel);
   const src=carried?pv:CUR;
   $('#pG').value=src.prog_grammar||''; $('#pR').value=src.prog_reading||''; $('#pL').value=src.prog_listening||''; $('#pV').value=src.prog_vocab||'';
   $('#vCounsel').value=src.counsel||'';
+  $('#eT').value=CUR.exam_title||''; $('#eR').value=CUR.exam_range||''; $('#eC').value=CUR.exam_counsel||'';
+  applyKind(CUR.kind||'monthly', false);
   $('#carry').classList.toggle('hide',!carried);
   $('#btnSent').textContent='발송 완료';
   stamp();
@@ -1225,14 +1253,33 @@ async function close(){
   if(CUR&&DIRTY&&CUR.status!=='sent'){ await save('drafted',true); toast('저장됐습니다'); }
   $('#drawer').classList.remove('on'); $('#scrim').classList.remove('on'); document.body.style.overflow=''; CUR=null;
 }
-$('#btnClearCarry').onclick=()=>{ F.forEach(id=>$('#'+id).value=''); $('#carry').classList.add('hide'); DIRTY=true; drawCard(); $('#pG').focus(); };
+$('#btnClearCarry').onclick=()=>{ F.forEach(id=>$('#'+id).value=''); $('#carry').classList.add('hide'); DIRTY=true; drawCard(); $(KIND==='exam'?'#eT':'#pG').focus(); };
 $('#dClose').onclick=close; $('#scrim').onclick=close;
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&CUR) close(); });
 let drawT; F.forEach(id=>$('#'+id).addEventListener('input',()=>{ DIRTY=true; clearTimeout(drawT); drawT=setTimeout(drawCard,120); }));
 
-function fields(){ return { prog_grammar:v('pG'), prog_reading:v('pR'), prog_listening:v('pL'), prog_vocab:v('pV'), counsel:v('vCounsel') }; }
+function fields(){ return { kind:KIND,
+  prog_grammar:v('pG'), prog_reading:v('pR'), prog_listening:v('pL'), prog_vocab:v('pV'), counsel:v('vCounsel'),
+  exam_title:v('eT'), exam_range:v('eR'), exam_counsel:v('eC') }; }
 function v(id){ return $('#'+id).value.trim()||null; }
 function teacherName(){ return CUR?.teachers?.name||ME?.name||''; }
+
+/* ---- 월간 진도 / 시험대비 전환 ---- */
+function applyKind(k,redraw){
+  KIND = (k==='exam')?'exam':'monthly';
+  const ex = KIND==='exam';
+  $$('#kindSw button').forEach(b=>b.classList.toggle('on', b.dataset.kind===KIND));
+  $('#secExam').hidden = !ex;
+  $('#secProg').hidden = ex;
+  $('#eC').classList.toggle('hide', !ex);
+  $('#vCounsel').classList.toggle('hide', ex);
+  $('#counselH').textContent = ex ? '학부모 상담 · 피드백' : '학부모 상담 · 피드백';
+  $('#kindHint').textContent = ex
+    ? '시험 범위와 대비 상황을 학부모께 알리는 리포트입니다. 월간 진도와 따로 저장됩니다.'
+    : '한 달 수업 내용을 학부모께 알리는 기본 리포트입니다.';
+  if(redraw){ DIRTY=true; drawCard(); }
+}
+$$('#kindSw button').forEach(b=>b.onclick=()=>applyKind(b.dataset.kind,true));
 
 
 /* ==================== 진도 파서 — 대충 쳐도 교재·범위·단원·점수로 분리 ==================== */
@@ -1471,10 +1518,18 @@ $('#btnPolish').onclick=async()=>{
 let PACK=[];                       // [{rec, f, on}]
 function pmsg2(t,cls){ const e=$('#packMsg'); if(!t){ e.className='voiceMsg hide'; return; }
   e.className='voiceMsg'+(cls?' '+cls:''); e.textContent=t; }
-function recFields(r){ return { prog_grammar:r.prog_grammar, prog_reading:r.prog_reading,
-  prog_listening:r.prog_listening, prog_vocab:r.prog_vocab, counsel:r.counsel }; }
-function hasAny(f){ return !!(f.counsel||f.prog_grammar||f.prog_reading||f.prog_listening||f.prog_vocab); }
+function recFields(r){ return { kind:r.kind||'monthly',
+  prog_grammar:r.prog_grammar, prog_reading:r.prog_reading,
+  prog_listening:r.prog_listening, prog_vocab:r.prog_vocab, counsel:r.counsel,
+  exam_title:r.exam_title, exam_range:r.exam_range, exam_counsel:r.exam_counsel }; }
+function hasAny(f){ return f.kind==='exam' ? !!(f.exam_range||f.exam_counsel)
+  : !!(f.counsel||f.prog_grammar||f.prog_reading||f.prog_listening||f.prog_vocab); }
 function progSummary(f){
+  if((f.kind||'monthly')==='exam'){
+    const r=(f.exam_range||'').split('\n').map(x=>x.trim()).filter(Boolean);
+    if(!r.length) return f.exam_title?`[시험대비] ${f.exam_title}`:'';
+    return `[시험대비] ${f.exam_title?f.exam_title+' · ':''}${r[0]}${r.length>1?` 외 ${r.length-1}줄`:''}`;
+  }
   const P=progressItems(f); if(!P.length) return '';
   const first=P[0], it=first.items[0];
   const head=`[${first.label}] ${[it.book,it.range].filter(Boolean).join(' ')}`;
@@ -1522,7 +1577,7 @@ function buildPack(){
         <div class="pn">${esc(s.name)}</div>
         <div class="pm">${[s.school,s.grade].filter(Boolean).map(esc).join(' · ')||'—'}${x.rec.teachers?' · '+esc(x.rec.teachers.name)+' 선생님':''}</div>
         ${sum?`<div class="pp">${esc(sum)}</div>`:''}
-        ${f.counsel?`<div class="pc">${esc(f.counsel)}</div>`:'<div class="pc">피드백 없음</div>'}
+        ${(f.kind==='exam'?f.exam_counsel:f.counsel)?`<div class="pc">${esc(f.kind==='exam'?f.exam_counsel:f.counsel)}</div>`:'<div class="pc">피드백 없음</div>'}
       </div>
       ${hasAny(f)?`<button class="more" data-pv="${i}">자세히</button>`:''}
     </div>`;
@@ -1593,17 +1648,20 @@ async function packCanvas(list, tlabel){
 
   // 높이 계산
   const blocks=list.map(x=>{
-    const f=x.f, s=x.rec.students;
-    const P=progressItems(f);
+    const f=x.f, s=x.rec.students, ex=(f.kind||'monthly')==='exam';
+    const P=ex?[]:progressItems(f);
+    mx.font=font(500,24);
+    const er=ex&&f.exam_range?String(f.exam_range).split('\n').flatMap(l=>l.trim()?wrap(mx,l,CW-180):[]):[];
     mx.font=font(400,25);
-    const cl=f.counsel?wrap(mx,f.counsel,CW-44):[];
+    const cl=(ex?f.exam_counsel:f.counsel)?wrap(mx,ex?f.exam_counsel:f.counsel,CW-44):[];
     let h=0;
     h+=56;                                   // 이름 줄
     P.forEach(g=>{ h+=g.items.length*36+10; });
     if(P.length) h+=8;
+    if(er.length) h+=er.length*36+18;
     if(cl.length) h+=12+cl.length*40;
     h+=30;
-    return {x,P,cl,h:Math.max(h,110)};
+    return {x,P,cl,er,ex,h:Math.max(h,110)};
   });
   const HEAD=186, FOOT=104;
   const H=HEAD+blocks.reduce((a,b)=>a+b.h+14,0)+FOOT;
@@ -1638,6 +1696,15 @@ async function packCanvas(list, tlabel){
     ctx.fillText(sent?'발송 완료':'미발송', PAD+CW-22, ty);
     ctx.textAlign='left';
     ty+=18;
+    if(b.ex){
+      ty+=36;
+      ctx.fillStyle=BRAND.coral; ctx.font=font(700,19); ctx.fillText('시험대비', PAD+22, ty);
+      ctx.fillStyle=BRAND.ink; ctx.font=font(700,23);
+      ctx.fillText(b.x.f.exam_title||'시험 범위', PAD+136, ty);
+      ctx.fillStyle=BRAND.ink2; ctx.font=font(500,24);
+      b.er.forEach(ln=>{ ty+=36; ctx.fillText(ln, PAD+136, ty); });
+      ty+=18;
+    }
     b.P.forEach(gp=>{
       gp.items.forEach(it=>{
         ty+=36;
@@ -1957,6 +2024,7 @@ async function renderCard(canvas){
   return renderCardFor(canvas, CUR, fields(), teacherName(), PERIOD);
 }
 async function renderCardFor(canvas, REC, f, TNAME, PER){
+  if((f.kind||'monthly')==='exam') return renderExamCard(canvas, REC, f, TNAME, PER);
   const s=REC.students, [yy,mm]=PER.split('-');
   await loadLogo(); try{ await document.fonts.ready; }catch{}
   const W=1080, PAD=72, CW=W-PAD*2;
@@ -2067,6 +2135,76 @@ async function renderCardFor(canvas, REC, f, TNAME, PER){
   ctx.fillStyle=BRAND.ink2; ctx.font=font(700,23); ctx.fillText(fmtDay(REC.sent_at), W-PAD, fy+50);
   ctx.fillStyle=BRAND.ink3; ctx.font=font(400,21); ctx.fillText(ACADEMY.addr, W-PAD, fy+88); ctx.textAlign='left';
 }
+async function renderExamCard(canvas, REC, f, TNAME, PER){
+  const s=REC.students, [yy,mm]=PER.split('-');
+  await loadLogo(); try{ await document.fonts.ready; }catch{}
+  const W=1080, PAD=72, CW=W-PAD*2;
+  const ctx=canvas.getContext('2d');
+  const font=(w,px)=>`${w} ${px}px ${FONT}`;
+
+  ctx.font=font(500,30);
+  const rangeLines = f.exam_range ? String(f.exam_range).split('\n').flatMap(ln=>ln.trim()?wrap(ctx,ln,CW-56):['']) : [];
+  ctx.font=font(400,31);
+  const cLines = f.exam_counsel ? wrap(ctx,f.exam_counsel,CW-20) : [];
+
+  let H=14+PAD-10+110+52+70+40+1+44;
+  if(rangeLines.length){ H+=44 + (rangeLines.length*46+44) + 26; }
+  if(cLines.length){ H+=44 + cLines.length*52 + 30; }
+  if(!rangeLines.length && !cLines.length) H+=120;
+  H+=40+120;
+  canvas.width=W; canvas.height=H;
+
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  const grad=ctx.createLinearGradient(0,0,W,0);
+  grad.addColorStop(0,BRAND.coral); grad.addColorStop(1,BRAND.blue);
+  ctx.fillStyle=grad; ctx.fillRect(0,0,W,14);
+
+  let y=14+PAD-10;
+  if(LOGO) ctx.drawImage(LOGO, PAD-26, y-22, 164, 164);
+  ctx.textBaseline='alphabetic';
+  ctx.fillStyle=BRAND.ink3; ctx.font=font(700,24); ctx.textAlign='right';
+  ctx.fillText('EXAM PREP REPORT', W-PAD, y+40);
+  ctx.fillStyle=BRAND.ink; ctx.font=font(800,46);
+  ctx.fillText(f.exam_title || `${yy}년 ${+mm}월 시험대비`, W-PAD, y+92);
+  ctx.textAlign='left';
+  y+=110+52;
+
+  ctx.fillStyle=BRAND.ink; ctx.font=font(800,52); ctx.fillText(s.name, PAD, y+10);
+  const nw=ctx.measureText(s.name).width;
+  ctx.fillStyle=BRAND.ink3; ctx.font=font(500,27); ctx.fillText('학생', PAD+nw+16, y+10);
+  y+=40;
+  ctx.fillStyle=BRAND.ink3; ctx.font=font(500,26);
+  ctx.fillText([s.school,s.grade,s.class_label].filter(Boolean).join('  ·  '), PAD, y+22);
+  y+=40+1;
+  ctx.fillStyle='#e8eaf0'; ctx.fillRect(PAD,y,CW,1); y+=44;
+
+  if(rangeLines.length){
+    ctx.fillStyle=BRAND.coral; ctx.font=font(800,27); ctx.fillText('시험 범위', PAD, y+6); y+=44;
+    const bh=rangeLines.length*46+44;
+    ctx.fillStyle='#fff5f5'; rr(ctx,PAD,y-14,CW,bh,18); ctx.fill();
+    let ry=y+16;
+    ctx.fillStyle=BRAND.ink; ctx.font=font(600,30);
+    rangeLines.forEach(ln=>{ ry+=46; ctx.fillText(ln, PAD+28, ry-12); });
+    y+=bh+26;
+  }
+  if(cLines.length){
+    ctx.fillStyle=BRAND.blue; ctx.font=font(800,27); ctx.fillText('학부모 상담 · 피드백', PAD, y+6); y+=44;
+    ctx.fillStyle=BRAND.ink2; ctx.font=font(400,31);
+    cLines.forEach(ln=>{ ctx.fillText(ln, PAD+10, y+34); y+=52; }); y+=30;
+  }
+  if(!rangeLines.length && !cLines.length){
+    ctx.fillStyle=BRAND.ink3; ctx.font=font(400,28); ctx.textAlign='center';
+    ctx.fillText('시험 범위와 피드백을 입력하면 여기에 나타납니다', W/2, y+50);
+    ctx.textAlign='left'; y+=120;
+  }
+  const fy=H-120;
+  ctx.fillStyle='#f6f7fa'; ctx.fillRect(0,fy,W,120);
+  ctx.fillStyle=BRAND.ink; ctx.font=font(800,27); ctx.fillText(`담당  ${TNAME} 선생님`, PAD, fy+50);
+  ctx.fillStyle=BRAND.ink3; ctx.font=font(500,24); ctx.fillText(`${ACADEMY.name}  ·  ${ACADEMY.tel}`, PAD, fy+88);
+  ctx.textAlign='right';
+  ctx.fillStyle=BRAND.ink2; ctx.font=font(700,23); ctx.fillText(fmtDay(REC.sent_at), W-PAD, fy+50);
+  ctx.fillStyle=BRAND.ink3; ctx.font=font(400,21); ctx.fillText(ACADEMY.addr, W-PAD, fy+88); ctx.textAlign='left';
+}
 function rr(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 async function drawCard(){ const cv=$('#cardCv'); await renderCard(cv); $('#cardSize').textContent=`· ${cv.width}×${cv.height}`; }
 function cardBlob(){ return new Promise(res=>$('#cardCv').toBlob(res,'image/png')); }
@@ -2086,7 +2224,9 @@ $('#btnImg').onclick=async()=>{
   await save('drafted', true);
   toast(shared?'저장했습니다. 발송 후 [발송 완료]를 눌러주세요':'이미지를 받았습니다. 카톡으로 보낸 뒤 [발송 완료]');
 };
-function hasContent(){ const f=fields(); return !!(f.counsel||f.prog_grammar||f.prog_reading||f.prog_listening||f.prog_vocab); }
+function hasContent(){ const f=fields();
+  return f.kind==='exam' ? !!(f.exam_range||f.exam_counsel)
+                         : !!(f.counsel||f.prog_grammar||f.prog_reading||f.prog_listening||f.prog_vocab); }
 $('#btnTxt').onclick=async()=>{
   const t=buildText();
   try{ await navigator.clipboard.writeText(t); }catch{ const ta=document.createElement('textarea'); ta.value=t; document.body.append(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
