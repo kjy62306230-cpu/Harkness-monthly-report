@@ -209,6 +209,32 @@ a.linkbtn{text-decoration:none;display:inline-block}
 .regWarn{margin-top:12px;border-left:3px solid var(--amber-solid);background:var(--amber-soft);
   border-radius:0 10px 10px 0;padding:12px 15px;font-size:13px;line-height:1.75;color:var(--ink2)}
 .regWarn b{color:var(--ink);font-weight:800}
+.chip.pack{background:var(--accent-soft);color:var(--accent-deep);border-color:transparent;font-weight:800}
+.chip.pack svg{width:14px;height:14px;margin-right:5px;vertical-align:-2px}
+.packTop{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.packTop select{padding:8px 11px;border:1px solid var(--sep);border-radius:var(--r-ctl);background:var(--surface-solid);font:inherit;font-size:13.5px}
+.packStat{font-size:13px;color:var(--ink3);margin-left:auto}
+.packStat b{color:var(--ink);font-weight:800}
+.pgrp{margin-bottom:18px}
+.pgrp>h4{margin:0 0 9px;font-size:13px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.pgrp>h4 .n{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:var(--r-pill)}
+.pgrp.done>h4{color:var(--green)} .pgrp.done>h4 .n{background:var(--green-soft);color:var(--green)}
+.pgrp.todo>h4{color:var(--red)}   .pgrp.todo>h4 .n{background:var(--red-soft);color:var(--red)}
+.pgrp>h4 button{margin-left:auto;background:none;border:0;font:inherit;font-size:12px;font-weight:700;
+  color:var(--ink3);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.prow{display:flex;gap:11px;align-items:flex-start;background:var(--surface-solid);border:1px solid var(--sep);
+  border-radius:var(--r-card);padding:12px 14px;margin-bottom:7px}
+.prow input[type=checkbox]{width:19px;height:19px;accent-color:var(--accent);flex:0 0 auto;margin-top:2px}
+.prow .pb{flex:1;min-width:0}
+.prow .pn{font-size:14.5px;font-weight:800;letter-spacing:-.02em}
+.prow .pm{font-size:12px;color:var(--ink3);margin-top:1px}
+.prow .pp{font-size:12.5px;color:var(--ink2);margin-top:6px;line-height:1.6}
+.prow .pc{font-size:12.5px;color:var(--ink3);margin-top:5px;line-height:1.6;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prow .more{flex:0 0 auto;align-self:center;background:var(--fill);border:1px solid var(--sep);border-radius:var(--r-pill);
+  font:inherit;font-size:11.5px;font-weight:700;color:var(--ink2);padding:5px 11px;cursor:pointer;white-space:nowrap}
+.prow .more:hover{background:var(--fill2)}
+.prow.off{opacity:.5}
 .findRow{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:15px;font-size:12.5px;color:var(--ink3)}
 .findLink{background:none;border:0;font:inherit;font-size:12.5px;font-weight:700;color:var(--ink2);
   cursor:pointer;padding:4px 2px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--fill2)}
@@ -667,7 +693,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v31</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v32</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -701,6 +727,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
     <input class="search" id="q" placeholder="학생 이름 검색">
     <button class="chip" id="chipAdd" style="border-style:dashed">＋ 학생 추가</button>
     <button class="chip mic" id="chipVoice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg>여러 명 한 번에</button>
+    <button class="chip pack" id="chipPack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>이번 달 모아보기</button>
   </div>
   <main><div class="grid" id="grid"></div></main>
 </div>
@@ -799,6 +826,37 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
 </div>
 
 <!-- 여러 명 음성 -->
+<!-- 이번 달 모아보기 -->
+<div class="modal hide" id="pack">
+  <div class="mbox" style="max-width:720px">
+    <div class="dhead">
+      <div><h2 id="packTitle">이번 달 모아보기</h2><div class="sub" id="packSub">—</div></div>
+      <button class="x" id="packClose">✕</button>
+    </div>
+    <div class="mbody" id="packBody">
+      <div class="packTop">
+        <select id="packWho" class="hide"></select>
+        <div class="packStat" id="packStat"></div>
+      </div>
+      <div id="packList"></div>
+      <div class="voiceMsg hide" id="packMsg"></div>
+    </div>
+    <div class="dfoot">
+      <button class="btn ghost" id="packImg">이미지로 저장</button>
+      <button class="btn" id="packPdf">PDF로 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 카드 한 장 크게 보기 -->
+<div class="modal hide" id="one">
+  <div class="mbox" style="max-width:560px">
+    <div class="dhead"><div><h2 id="oneName">—</h2><div class="sub" id="oneMeta"></div></div><button class="x" id="oneClose">✕</button></div>
+    <div class="mbody" style="background:var(--fill)"><div class="cardwrap"><canvas id="oneCv"></canvas></div></div>
+    <div class="dfoot"><button class="btn ghost" id="oneClose2">닫기</button><button class="btn" id="oneSave">이 카드만 저장</button></div>
+  </div>
+</div>
+
 <div class="modal hide" id="mv">
   <div class="mbox" style="max-width:640px">
     <div class="dhead">
@@ -896,7 +954,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v31';
+const APP_VER = 'v32';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1409,6 +1467,258 @@ $('#btnPolish').onclick=async()=>{
   finally{ btn.disabled=false; }
 };
 
+/* ==================== 이번 달 모아보기 ==================== */
+let PACK=[];                       // [{rec, f, on}]
+function pmsg2(t,cls){ const e=$('#packMsg'); if(!t){ e.className='voiceMsg hide'; return; }
+  e.className='voiceMsg'+(cls?' '+cls:''); e.textContent=t; }
+function recFields(r){ return { prog_grammar:r.prog_grammar, prog_reading:r.prog_reading,
+  prog_listening:r.prog_listening, prog_vocab:r.prog_vocab, counsel:r.counsel }; }
+function hasAny(f){ return !!(f.counsel||f.prog_grammar||f.prog_reading||f.prog_listening||f.prog_vocab); }
+function progSummary(f){
+  const P=progressItems(f); if(!P.length) return '';
+  const first=P[0], it=first.items[0];
+  const head=`[${first.label}] ${[it.book,it.range].filter(Boolean).join(' ')}`;
+  const extra=P.reduce((a,g)=>a+g.items.length,0)-1;
+  return extra>0 ? `${head} 외 ${extra}건` : head;
+}
+function packTeachers(){
+  if(ME.role!=='director') return [{id:ME.id,name:ME.name}];
+  return TEACHERS.map(t=>({id:t.id,name:t.name}));
+}
+$('#chipPack').onclick=()=>{
+  const sel=$('#packWho');
+  if(ME.role==='director'){
+    sel.classList.remove('hide');
+    sel.innerHTML=packTeachers().map(t=>`<option value="${t.id}"${t.id===ME.id?' selected':''}>${esc(t.name)} 선생님</option>`).join('')
+      + '<option value="all">선생님 전체</option>';
+  } else { sel.classList.add('hide'); sel.innerHTML=''; }
+  $('#pack').classList.remove('hide');
+  buildPack();
+};
+$('#packWho').onchange=buildPack;
+$('#packClose').onclick=()=>$('#pack').classList.add('hide');
+
+function buildPack(){
+  const who = ME.role==='director' ? $('#packWho').value : ME.id;
+  const tname = who==='all' ? '' : (packTeachers().find(t=>t.id===who)||{}).name || '';
+  let rows = ROWS.filter(r=>r.students);
+  if(who!=='all') rows = rows.filter(r=>r.teacher_id===who);
+  rows.sort((a,b)=>a.students.name.localeCompare(b.students.name,'ko'));
+
+  PACK = rows.map(r=>({ rec:r, f:recFields(r), on:r.status==='sent' }));
+  const done = PACK.filter(x=>x.rec.status==='sent');
+  const rest = PACK.filter(x=>x.rec.status!=='sent');
+
+  $('#packTitle').textContent=`${ymLabel(PERIOD)} 모아보기`;
+  $('#packSub').textContent = who==='all' ? '선생님 전체' : `${tname} 선생님`;
+  $('#packStat').innerHTML=`발송 완료 <b>${done.length}</b> · 아직 안 보냄 <b>${rest.length}</b>`;
+
+  const row=(x,i)=>{
+    const f=x.f, s=x.rec.students;
+    const sum=progSummary(f);
+    return `<div class="prow${x.on?'':' off'}">
+      <input type="checkbox" data-pk="${i}"${x.on?' checked':''}>
+      <div class="pb">
+        <div class="pn">${esc(s.name)}</div>
+        <div class="pm">${[s.school,s.grade].filter(Boolean).map(esc).join(' · ')||'—'}${x.rec.teachers?' · '+esc(x.rec.teachers.name)+' 선생님':''}</div>
+        ${sum?`<div class="pp">${esc(sum)}</div>`:''}
+        ${f.counsel?`<div class="pc">${esc(f.counsel)}</div>`:'<div class="pc">피드백 없음</div>'}
+      </div>
+      ${hasAny(f)?`<button class="more" data-pv="${i}">자세히</button>`:''}
+    </div>`;
+  };
+  const grp=(cls,title,arr)=>!arr.length?'':
+    `<div class="pgrp ${cls}"><h4>${title}<span class="n">${arr.length}명</span>
+      <button data-pall="${cls}">모두 ${cls==='done'?'선택':'해제'}</button></h4>
+      ${arr.map(x=>row(x,PACK.indexOf(x))).join('')}</div>`;
+
+  $('#packList').innerHTML =
+    grp('done','✅ 발송 완료', done) +
+    grp('todo','⚠️ 아직 안 보낸 학생', rest) +
+    (PACK.length?'':'<p class="hint" style="margin:0">이번 달 학생이 없습니다.</p>');
+
+  $$('#packList [data-pk]').forEach(c=>c.onchange=()=>{
+    PACK[+c.dataset.pk].on=c.checked;
+    c.closest('.prow').classList.toggle('off',!c.checked);
+    packCount();
+  });
+  $$('#packList [data-pv]').forEach(b=>b.onclick=()=>openOne(+b.dataset.pv));
+  $$('#packList [data-pall]').forEach(b=>b.onclick=()=>{
+    const cls=b.dataset.pall, arr=cls==='done'?done:rest;
+    const target=!arr.every(x=>x.on);
+    arr.forEach(x=>x.on=target);
+    buildPack();
+  });
+  packCount();
+}
+function packWhoName(){ return ($('#packSub').textContent||'').replace(/[^\uAC00-\uD7A3A-Za-z0-9]/g,'')||'전체'; }
+function packCount(){
+  const n=PACK.filter(x=>x.on).length;
+  $('#packImg').disabled=!n; $('#packPdf').disabled=!n;
+  $('#packImg').textContent=n?`이미지로 저장 (${n})`:'이미지로 저장';
+  $('#packPdf').textContent=n?`PDF로 저장 (${n})`:'PDF로 저장';
+  pmsg2('');
+}
+
+/* ---- 카드 한 장 크게 ---- */
+let ONEI=-1;
+async function openOne(i){
+  ONEI=i; const x=PACK[i], s=x.rec.students;
+  $('#oneName').textContent=s.name;
+  $('#oneMeta').textContent=[s.school,s.grade].filter(Boolean).join(' · ')+' · '+ymLabel(PERIOD);
+  $('#one').classList.remove('hide');
+  await renderCardFor($('#oneCv'), x.rec, x.f, (x.rec.teachers&&x.rec.teachers.name)||ME.name, PERIOD);
+}
+$('#oneClose').onclick=$('#oneClose2').onclick=()=>$('#one').classList.add('hide');
+$('#oneSave').onclick=async()=>{
+  const x=PACK[ONEI]; if(!x) return;
+  const blob=await new Promise(r=>$('#oneCv').toBlob(r,'image/png'));
+  await shareOrSave(blob, `${x.rec.students.name}_${PERIOD}_학습리포트.png`, x.rec.students.name+' 학습 리포트');
+};
+async function shareOrSave(blob,name,title){
+  const file=new File([blob],name,{type:blob.type});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file],title}); return true; }
+    catch(e){ if(e.name==='AbortError') return false; }
+  }
+  download(blob,name); return true;
+}
+
+/* ---- 전체 → 이미지 한 장 ---- */
+async function packCanvas(list, tlabel){
+  await loadLogo(); try{ await document.fonts.ready; }catch{}
+  const W=1080, PAD=64, CW=W-PAD*2;
+  const tmp=document.createElement('canvas'); const mx=tmp.getContext('2d');
+  const font=(w,px)=>`${w} ${px}px ${FONT}`;
+
+  // 높이 계산
+  const blocks=list.map(x=>{
+    const f=x.f, s=x.rec.students;
+    const P=progressItems(f);
+    mx.font=font(400,25);
+    const cl=f.counsel?wrap(mx,f.counsel,CW-44):[];
+    let h=0;
+    h+=56;                                   // 이름 줄
+    P.forEach(g=>{ h+=g.items.length*36+10; });
+    if(P.length) h+=8;
+    if(cl.length) h+=12+cl.length*40;
+    h+=30;
+    return {x,P,cl,h:Math.max(h,110)};
+  });
+  const HEAD=186, FOOT=104;
+  const H=HEAD+blocks.reduce((a,b)=>a+b.h+14,0)+FOOT;
+
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d'); ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  const g=ctx.createLinearGradient(0,0,W,0); g.addColorStop(0,BRAND.blue); g.addColorStop(1,BRAND.coral);
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,12);
+
+  if(LOGO) ctx.drawImage(LOGO, PAD-22, 30, 128, 128);
+  ctx.textAlign='right';
+  ctx.fillStyle=BRAND.ink3; ctx.font=font(700,21); ctx.fillText('MONTHLY FEEDBACK', W-PAD, 72);
+  ctx.fillStyle=BRAND.ink;  ctx.font=font(800,40); ctx.fillText(ymLabel(PERIOD), W-PAD, 118);
+  ctx.fillStyle=BRAND.ink2; ctx.font=font(600,24); ctx.fillText(`${tlabel} · ${list.length}명`, W-PAD, 152);
+  ctx.textAlign='left';
+  ctx.fillStyle='#e8eaf0'; ctx.fillRect(PAD,HEAD-24,CW,1);
+
+  let y=HEAD;
+  blocks.forEach(b=>{
+    const s=b.x.rec.students, sent=b.x.rec.status==='sent';
+    ctx.fillStyle='#fafbfd'; rr(ctx,PAD,y,CW,b.h,16); ctx.fill();
+    ctx.strokeStyle='#eceef4'; ctx.lineWidth=1; rr(ctx,PAD,y,CW,b.h,16); ctx.stroke();
+    let ty=y+40;
+    ctx.fillStyle=BRAND.ink; ctx.font=font(800,30);
+    ctx.fillText(s.name, PAD+22, ty);
+    const nw=ctx.measureText(s.name).width;
+    ctx.fillStyle=BRAND.ink3; ctx.font=font(500,21);
+    ctx.fillText([s.school,s.grade].filter(Boolean).join(' · '), PAD+22+nw+14, ty);
+    ctx.textAlign='right';
+    ctx.fillStyle=sent?'#1f9e58':'#d63a31'; ctx.font=font(700,20);
+    ctx.fillText(sent?'발송 완료':'미발송', PAD+CW-22, ty);
+    ctx.textAlign='left';
+    ty+=18;
+    b.P.forEach(gp=>{
+      gp.items.forEach(it=>{
+        ty+=36;
+        ctx.fillStyle=BRAND.blue; ctx.font=font(700,19);
+        ctx.fillText(gp.label, PAD+22, ty);
+        const LX=PAD+136;
+        ctx.fillStyle=BRAND.ink; ctx.font=font(700,23);
+        const txt=[it.book,it.range].filter(Boolean).join('  ');
+        ctx.fillText(txt, LX, ty);
+        if(it.topic){ const w2=ctx.measureText(txt).width;
+          ctx.fillStyle=BRAND.ink3; ctx.font=font(400,20); ctx.fillText(it.topic, LX+w2+12, ty); }
+      });
+      ty+=10;
+    });
+    if(b.cl.length){
+      ty+=12; ctx.fillStyle=BRAND.ink2; ctx.font=font(400,25);
+      b.cl.forEach(ln=>{ ty+=40; ctx.fillText(ln, PAD+22, ty); });
+    }
+    y+=b.h+14;
+  });
+
+  const fy=H-FOOT;
+  ctx.fillStyle='#f6f7fa'; ctx.fillRect(0,fy,W,FOOT);
+  ctx.fillStyle=BRAND.ink3; ctx.font=font(500,22);
+  ctx.fillText(`${ACADEMY.name}  ·  ${ACADEMY.tel}`, PAD, fy+62);
+  ctx.textAlign='right'; ctx.fillText(fmtDay(), W-PAD, fy+62); ctx.textAlign='left';
+  return cv;
+}
+
+$('#packImg').onclick=async()=>{
+  const list=PACK.filter(x=>x.on); if(!list.length) return;
+  const b=$('#packImg'); b.disabled=true; const lbl=b.textContent; b.textContent='만드는 중…';
+  pmsg2('이미지를 만들고 있습니다…','work');
+  try{
+    const cv=await packCanvas(list, $('#packSub').textContent);
+    const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+    const name=`${ACADEMY.name}_${PERIOD}_${packWhoName()}.png`;
+    await shareOrSave(blob,name,`${ymLabel(PERIOD)} 피드백 모음`);
+    pmsg2(`${list.length}명을 한 장으로 저장했습니다.`);
+  }catch(e){ pmsg2('실패: '+e.message,'err'); }
+  finally{ b.disabled=false; b.textContent=lbl; }
+};
+
+/* ---- 전체 → PDF ---- */
+function loadJsPDF(){
+  if(window.jspdf && window.jspdf.jsPDF) return Promise.resolve();
+  return new Promise((res,rej)=>{
+    const sc=document.createElement('script');
+    sc.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    sc.onload=()=>res(); sc.onerror=()=>rej(new Error('PDF 모듈을 못 받았습니다. 인터넷을 확인해 주세요.'));
+    document.head.appendChild(sc);
+  });
+}
+$('#packPdf').onclick=async()=>{
+  const list=PACK.filter(x=>x.on); if(!list.length) return;
+  const b=$('#packPdf'); b.disabled=true; const lbl=b.textContent;
+  try{
+    b.textContent='준비 중…'; pmsg2('PDF를 만들고 있습니다…','work');
+    await loadJsPDF();
+    const { jsPDF }=window.jspdf;
+    const doc=new jsPDF({ unit:'pt', format:'a4', compress:true });
+    const PW=doc.internal.pageSize.getWidth(), PH=doc.internal.pageSize.getHeight(), M=24;
+    const cv=document.createElement('canvas');
+    for(let i=0;i<list.length;i++){
+      const x=list[i];
+      b.textContent=`${i+1} / ${list.length}`;
+      await renderCardFor(cv, x.rec, x.f, (x.rec.teachers&&x.rec.teachers.name)||ME.name, PERIOD);
+      const img=cv.toDataURL('image/jpeg',0.92);
+      const w=PW-M*2, h=cv.height*(w/cv.width);
+      const fit=Math.min(1,(PH-M*2)/h);
+      if(i) doc.addPage();
+      doc.addImage(img,'JPEG',M+(w-w*fit)/2, M, w*fit, h*fit);
+    }
+    const name=`${ACADEMY.name}_${PERIOD}_${packWhoName()}.pdf`;
+    const blob=doc.output('blob');
+    await shareOrSave(blob,name,`${ymLabel(PERIOD)} 피드백 모음`);
+    pmsg2(`${list.length}명 · ${list.length}쪽 PDF로 저장했습니다.`);
+  }catch(e){ pmsg2('실패: '+e.message,'err'); }
+  finally{ b.disabled=false; b.textContent=lbl; }
+};
+
 /* ==================== 아이디 · 비밀번호 찾기 ==================== */
 let RECMODE='id';
 function recmsg(t,cls){ const e=$('#recMsg'); if(!t){ e.className='voiceMsg hide'; return; }
@@ -1643,7 +1953,11 @@ function wrap(ctx, text, maxW){
 }
 
 async function renderCard(canvas){
-  if(!CUR) return; const s=CUR.students, f=fields(), [yy,mm]=PERIOD.split('-');
+  if(!CUR) return;
+  return renderCardFor(canvas, CUR, fields(), teacherName(), PERIOD);
+}
+async function renderCardFor(canvas, REC, f, TNAME, PER){
+  const s=REC.students, [yy,mm]=PER.split('-');
   await loadLogo(); try{ await document.fonts.ready; }catch{}
   const W=1080, PAD=72, CW=W-PAD*2;
   const ctx=canvas.getContext('2d');
@@ -1747,10 +2061,10 @@ async function renderCard(canvas){
   // 푸터
   const fy=H-120;
   ctx.fillStyle='#f6f7fa'; ctx.fillRect(0,fy,W,120);
-  ctx.fillStyle=BRAND.ink; ctx.font=font(800,27); ctx.fillText(`담당  ${teacherName()} 선생님`, PAD, fy+50);
+  ctx.fillStyle=BRAND.ink; ctx.font=font(800,27); ctx.fillText(`담당  ${TNAME} 선생님`, PAD, fy+50);
   ctx.fillStyle=BRAND.ink3; ctx.font=font(500,24); ctx.fillText(`${ACADEMY.name}  ·  ${ACADEMY.tel}`, PAD, fy+88);
   ctx.textAlign='right';
-  ctx.fillStyle=BRAND.ink2; ctx.font=font(700,23); ctx.fillText(fmtDay(CUR.sent_at), W-PAD, fy+50);
+  ctx.fillStyle=BRAND.ink2; ctx.font=font(700,23); ctx.fillText(fmtDay(REC.sent_at), W-PAD, fy+50);
   ctx.fillStyle=BRAND.ink3; ctx.font=font(400,21); ctx.fillText(ACADEMY.addr, W-PAD, fy+88); ctx.textAlign='left';
 }
 function rr(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
