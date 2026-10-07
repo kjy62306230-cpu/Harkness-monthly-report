@@ -531,7 +531,7 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
 
 /* ---------- 발송 기록 ---------- */
 .hist-i{background:var(--surface-solid);border:1px solid var(--sep);border-radius:var(--r-card);margin-bottom:8px;overflow:hidden}
-.hist-i.draft{border-color:#f0b429;background:color-mix(in srgb, #f0b429 7%, var(--surface-solid))}
+.hist-i.draft{border-color:#f0b429;background:linear-gradient(rgba(240,180,41,.07),rgba(240,180,41,.07)),var(--surface-solid)}
 .hist-i.draft .dtag{
   display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;
   padding:3px 9px;border-radius:999px;background:#f0b429;color:#3a2a00;
@@ -773,7 +773,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v43</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v44</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -1091,7 +1091,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v43';
+const APP_VER = 'v44';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1355,7 +1355,7 @@ function open(id){
   applyKind(CUR.kind||'monthly', false);
   $('#carry').classList.toggle('hide',!carried);
   $('#btnSent').textContent='발송';
-  VM='merge'; FRESHBAK=null;
+  VM='merge'; FRESHBAK=null; LOGS=[];
   $$('#vMode button').forEach(b=>b.classList.toggle('on', b.dataset.vm==='merge'));
   $('#vModeHint').textContent=HINT_MERGE;
   stamp();
@@ -1366,6 +1366,7 @@ function open(id){
   $('#drawer').classList.add('on'); $('#scrim').classList.add('on'); document.body.style.overflow='hidden';
 }
 async function close(){
+  if(CUR&&FRESHBAK) restoreFreshBak();        // [전부 새로] 로 비운 건 저장 전에 되살린다
   if(CUR&&DIRTY&&CUR.status!=='sent'){ await save('drafted',true); toast('저장됐습니다'); }
   $('#drawer').classList.remove('on'); $('#scrim').classList.remove('on'); document.body.style.overflow=''; CUR=null;
 }
@@ -1467,7 +1468,7 @@ function parseProgress(raw,label){
   const out=[];
   for(const c of chunks){
     let cur=c,guard=0;
-    while(cur && guard++<4){ const r=parseOne(cur,label); out.push(r.item); cur=r.leftover; }
+    while(cur && guard++<8){ const r=parseOne(cur,label); out.push(r.item); cur=r.leftover; }
   }
   return out;
 }
@@ -1490,7 +1491,11 @@ function mergeVal(ov,nv,sep,mode){
   if(!nv) return { v:ov, st:'keep' };
   if(mode!=='merge') return { v:nv, st:(ov && nrm(ov)!==nrm(nv)) ? 'replace' : 'fill' };
   if(!ov) return { v:nv, st:'fill' };
-  if(nrm(ov).includes(nrm(nv))) return { v:ov, st:'dup' };
+  const a=nrm(ov), b=nrm(nv);
+  if(a===b) return { v:ov, st:'dup' };
+  // 조각 단위로 완전히 같을 때만 중복으로 본다 (CH 1 / CH 12 구분)
+  const segs=ov.split(/\s*\/\s*|\n{2,}|\n/).map(nrm).filter(Boolean);
+  if(segs.includes(b)) return { v:ov, st:'dup' };
   return { v:ov+sep+nv, st:'add' };
 }
 function mergeReport(st){
@@ -1518,24 +1523,40 @@ function bindMode(boxId,hintId,attr,set,after){
 /* [전부 새로] 를 고르면 작성 칸을 그 자리에서 비운다.
    되돌릴 수 있게 직전 내용을 들고 있다가 [이어서 채우기] 로 돌아오면 복구. */
 let FRESHBAK=null;
+function kindFields(){ return KIND==='exam' ? ['eT','eR','eC'] : ['pG','pR','pL','pV','vCounsel']; }
 function vModeSwitch(v){
+  const ids=kindFields();
   if(v==='fresh'){
-    const had=F.some(id=>($('#'+id).value||'').trim());
+    if(FRESHBAK){ vmsg('이미 비워져 있습니다. 되돌리려면 [이어서 채우기]를 누르세요.'); return; }
+    const had=ids.some(id=>($('#'+id).value||'').trim());
     if(had){
-      FRESHBAK={}; F.forEach(id=>{ FRESHBAK[id]=$('#'+id).value; $('#'+id).value=''; });
+      FRESHBAK={ ids };
+      ids.forEach(id=>{ FRESHBAK[id]=$('#'+id).value; $('#'+id).value=''; });
       DIRTY=true; drawCard();
       vmsg('작성 칸을 비웠습니다. 녹음하면 새로 채워집니다. (이어서 채우기를 누르면 되돌아옵니다)');
     }
   }else{
     if(FRESHBAK){
-      const empty=F.every(id=>!($('#'+id).value||'').trim());
+      const bids=FRESHBAK.ids||ids;
+      const empty=bids.every(id=>!($('#'+id).value||'').trim());
       if(empty){
-        F.forEach(id=>{ if(FRESHBAK[id]!=null) $('#'+id).value=FRESHBAK[id]; });
+        bids.forEach(id=>{ if(FRESHBAK[id]!=null) $('#'+id).value=FRESHBAK[id]; });
         DIRTY=true; drawCard(); vmsg('지우기 전 내용으로 되돌렸습니다.');
+        FRESHBAK=null;
+      }else{
+        vmsg('새로 적은 내용이 있어서 되돌리지 않았습니다. 칸을 비우고 다시 누르면 복구됩니다.');
       }
-      FRESHBAK=null;
     }
   }
+}
+/* 창을 닫기 전에, 비워둔 내용이 그대로 날아가지 않도록 되살린다 */
+function restoreFreshBak(){
+  if(!FRESHBAK) return false;
+  const bids=FRESHBAK.ids||[];
+  const empty=bids.every(id=>!($('#'+id).value||'').trim());
+  if(empty) bids.forEach(id=>{ if(FRESHBAK[id]!=null) $('#'+id).value=FRESHBAK[id]; });
+  FRESHBAK=null;
+  return empty;
 }
 bindMode('vMode','vModeHint','vm',v=>VM=v, vModeSwitch);
 bindMode('mMode','mModeHint','mvm',v=>MVM=v);
@@ -1594,10 +1615,20 @@ async function sendVoice(blob){
       if(data.error==='NO_KEY') throw new Error('Gemini 키가 아직 등록되지 않았습니다. J님께 문의해 주세요.');
       throw new Error(data.message||data.detail||data.error);
     }
-    BEFORE={ pG:$('#pG').value, pR:$('#pR').value, pL:$('#pL').value, pV:$('#pV').value, vCounsel:$('#vCounsel').value };
+    BEFORE={ pG:$('#pG').value, pR:$('#pR').value, pL:$('#pL').value, pV:$('#pV').value,
+             vCounsel:$('#vCounsel').value, eT:$('#eT').value, eR:$('#eR').value, eC:$('#eC').value };
     const ST={};
-    [['pG','prog_grammar',SEP_P],['pR','prog_reading',SEP_P],['pL','prog_listening',SEP_P],
-     ['pV','prog_vocab',SEP_P],['vCounsel','counsel',SEP_C]].forEach(([id,k,sep])=>{
+    const MAP = KIND==='exam'
+      ? [['eR','prog_reading',SEP_C],['eC','counsel',SEP_C]]   // 시험 범위 · 대비 상황
+      : [['pG','prog_grammar',SEP_P],['pR','prog_reading',SEP_P],['pL','prog_listening',SEP_P],
+         ['pV','prog_vocab',SEP_P],['vCounsel','counsel',SEP_C]];
+    if(KIND==='exam'){
+      // 시험 모드에서는 진도로 잡힌 내용을 시험 범위 칸에 모아 넣는다
+      const rng=[data.prog_grammar,data.prog_reading,data.prog_listening,data.prog_vocab]
+                  .filter(Boolean).join('\n');
+      data={ ...data, prog_reading:rng };
+    }
+    MAP.forEach(([id,k,sep])=>{
       const r=mergeVal($('#'+id).value, data[k], sep, VM);
       $('#'+id).value=r.v; ST[k]=r.st;
     });
@@ -1610,7 +1641,7 @@ async function sendVoice(blob){
     vmsg('실패: '+e.message,'err');
   }finally{ $('#btnRec').disabled=false; }
 }
-function showUndo(){
+function showUndo(){ /* BEFORE 는 8칸 모두 보관한다 */
   const e=$('#voiceMsg');
   const b=document.createElement('button');
   b.textContent='되돌리기'; b.style.cssText='margin-left:10px;background:#fff;border:1.5px solid #bfe3d0;color:var(--sent);font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:7px';
@@ -2219,7 +2250,8 @@ $('#mvApply').onclick=async()=>{
               prog_vocab:mv('prog_vocab',SEP_P),
               counsel:mv('counsel',SEP_C) };
     const payload={ ...f, message:buildTextFor(rec,f,rec.teachers?.name||ME.name),
-                    status:'drafted', drafted_at:new Date().toISOString() };
+                    drafted_at:new Date().toISOString() };
+    if(rec.status!=='sent') payload.status='drafted';   // 이미 발송된 건은 상태를 건드리지 않는다
     const { data, error }=await sb.from('feedback_records').update(payload).eq('id',rec.id).select(SEL).single();
     if(error){ fail++; continue; }
     const i=ROWS.findIndex(x=>x.id===rec.id); if(i>=0) ROWS[i]=data; ok++;
@@ -2235,13 +2267,19 @@ function buildTextFor(rec, f, tname){
   const CUR=rec; const s=rec.students, [,mm]=PERIOD.split('-');
   const teacherName=()=>tname||'';
   const L=[`안녕하세요, ${ACADEMY.name}입니다.`, `${s.name} 학생 ${+mm}월 학습 리포트 보내드립니다.`, ''];
-  const P=progressItems(f);
-  if(P.length){ L.push('■ 이번 달 진도');
-    P.forEach(({label,items})=>items.forEach(it=>{
-      const parts=[it.book, it.range, it.topic?`(${it.topic})`:null, it.score].filter(Boolean);
-      L.push(`${label} · ${parts.join(' ')}`);
-    })); L.push(''); }
-  if(f.counsel){ L.push('■ 상담 · 피드백'); L.push(f.counsel); L.push(''); }
+  if((f.kind||'monthly')==='exam'){
+    if(f.exam_title){ L.push('■ 시험'); L.push(f.exam_title); L.push(''); }
+    if(f.exam_range){ L.push('■ 시험 범위'); L.push(f.exam_range); L.push(''); }
+    if(f.exam_counsel){ L.push('■ 상담 · 피드백'); L.push(f.exam_counsel); L.push(''); }
+  }else{
+    const P=progressItems(f);
+    if(P.length){ L.push('■ 이번 달 진도');
+      P.forEach(({label,items})=>items.forEach(it=>{
+        const parts=[it.book, it.range, it.topic?`(${it.topic})`:null, it.score].filter(Boolean);
+        L.push(`${label} · ${parts.join(' ')}`);
+      })); L.push(''); }
+    if(f.counsel){ L.push('■ 상담 · 피드백'); L.push(f.counsel); L.push(''); }
+  }
   L.push(`${fmtDay(CUR.sent_at)} · 담당 ${teacherName()} 선생님`); L.push(`${ACADEMY.name} ${ACADEMY.tel}`);
   return L.join('\n');
 }
@@ -2599,7 +2637,7 @@ $('#btnTxt').onclick=async()=>{
   toast('문구를 복사했습니다');
 };
 
-function fmtTs(t){ if(!t) return ''; const d=new Date(t);
+function fmtTs(t){ if(!t) return ''; const d=new Date(t); if(isNaN(d)) return '';
   return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
 function fmtDay(t){ const d=t?new Date(t):new Date(); return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`; }
 function stamp(){
@@ -2620,23 +2658,28 @@ async function loadHistory(){
   const { data, error }=await sb.from('feedback_logs').select('*')
     .eq('student_id', sid).order('sent_at',{ ascending:false }).limit(60);
   if(!CUR || CUR.student_id!==sid) return;
-  if(error){ $('#histWrap').innerHTML='<p class="hint" style="margin:0">기록을 불러오지 못했습니다.</p>'; return; }
+  if(error){ LOGS=[]; stamp(); $('#histWrap').innerHTML='<p class="hint" style="margin:0">기록을 불러오지 못했습니다.</p>'; return; }
   LOGS=data||[]; stamp();
 
   /* 임시저장(작성 중) — 발송 전 내용도 여기에 남긴다 */
   const df=recFields(CUR);
-  const isDraft = CUR.status!=='sent' && hasAny(df);
+  const isDraft = CUR.status!=='sent' &&
+    (hasAny({...df,kind:'monthly'}) || hasAny({...df,kind:'exam'}));
+  const reEdit = isDraft && !!CUR.sent_at;
   let draftHTML='';
   if(isDraft){
+    const dfEx = (df.kind==='exam') ? !!(df.exam_range||df.exam_counsel||df.exam_title)
+                                     : !(df.counsel||df.prog_grammar||df.prog_reading||df.prog_listening||df.prog_vocab)
+                                       && !!(df.exam_range||df.exam_counsel||df.exam_title);
     const DP=[['문법',df.prog_grammar],['독해',df.prog_reading],['듣기',df.prog_listening],['단어시험',df.prog_vocab]].filter(x=>x[1]);
-    const dtxt=(df.kind==='exam' ? (df.exam_counsel||df.exam_range) : (df.counsel||DP.map(x=>x[1]).join(' · ')))||'—';
+    const dtxt=(dfEx ? (df.exam_counsel||df.exam_range) : (df.counsel||DP.map(x=>x[1]).join(' · ')))||'—';
     draftHTML=`<div class="hist-i draft">
       <div class="hist-r">
-        <button class="hist-t" data-h="d"><span class="dtag">저장됨 · 미발송</span><b>${ymLabel(PERIOD)}</b><span class="pv">${esc(String(dtxt).replace(/\n/g,' '))}</span><span class="ar">▾</span></button>
+        <button class="hist-t" data-h="d"><span class="dtag">${reEdit?'발송 후 수정 중':'저장됨 · 미발송'}</span><b>${ymLabel(PERIOD)}</b><span class="pv">${esc(String(dtxt).replace(/\n/g,' '))}</span><span class="ar">▾</span></button>
       </div>
       <div class="hist-b hide" id="hbd">
-        <p class="hint" style="margin:10px 0 0">마지막 저장 ${esc(fmtTs(CUR.drafted_at||CUR.updated_at))} · 아직 발송하지 않았습니다</p>
-        ${df.kind==='exam'
+        <p class="hint" style="margin:10px 0 0">마지막 저장 ${esc(fmtTs(CUR.drafted_at||CUR.updated_at))||'시각 정보 없음'} · ${reEdit?'고친 내용은 아직 보내지 않았습니다':'아직 발송하지 않았습니다'}</p>
+        ${dfEx
           ? `${df.exam_title?`<dl><dt>시험</dt><dd>${esc(df.exam_title)}</dd></dl>`:''}${df.exam_range?`<div class="cs">${esc(df.exam_range)}</div>`:''}${df.exam_counsel?`<div class="cs">${esc(df.exam_counsel)}</div>`:''}`
           : `${DP.length?`<dl>${DP.map(([k,v2])=>`<dt>${k}</dt><dd>${esc(v2)}</dd>`).join('')}</dl>`:''}${df.counsel?`<div class="cs">${esc(df.counsel)}</div>`:''}`}
         <div class="draftR">
@@ -2647,7 +2690,7 @@ async function loadHistory(){
   }
 
   const tot=LOGS.length+(isDraft?1:0);
-  $('#histCnt').textContent=tot?`· ${LOGS.length}건 발송${isDraft?' · 저장 1건':''}`:'';
+  $('#histCnt').textContent=tot?`· ${LOGS.length}건 발송${isDraft?(reEdit?' · 수정 중':' · 저장 1건'):''}`:'';
   if(!tot){ $('#histWrap').innerHTML='<p class="hint" style="margin:0">아직 기록이 없습니다. <b>저장</b>하거나 <b>발송</b>하면 여기에 남습니다.</p>'; return; }
   $('#histWrap').innerHTML=draftHTML+LOGS.map((r,i)=>{
     const P=[['문법',r.prog_grammar],['독해',r.prog_reading],['듣기',r.prog_listening],['단어시험',r.prog_vocab]].filter(x=>x[1]);
@@ -2674,8 +2717,10 @@ async function loadHistory(){
   });
   const sf=$('#saveDraftFile');
   if(sf) sf.onclick=()=>safeOpenPick('save');
+  const warnOverwrite=()=>!DIRTY || confirm('지금 화면에 쓰고 계신 내용이 있습니다.\n저장된 내용으로 덮어쓸까요?');
   const cd=$('#contDraft');
   if(cd) cd.onclick=()=>{
+    if(!warnOverwrite()) return;
     const f=recFields(CUR);
     $('#pG').value=f.prog_grammar||''; $('#pR').value=f.prog_reading||''; $('#pL').value=f.prog_listening||'';
     $('#pV').value=f.prog_vocab||''; $('#vCounsel').value=f.counsel||'';
@@ -2697,6 +2742,7 @@ async function loadHistory(){
     toast(`${label}을 삭제했습니다`);
   });
   $$('#histWrap .loadv, #histWrap .histE').forEach(b=>b.onclick=()=>{
+    if(!warnOverwrite()) return;
     const r=LOGS[+b.dataset.l];
     $('#pG').value=r.prog_grammar||''; $('#pR').value=r.prog_reading||''; $('#pL').value=r.prog_listening||'';
     $('#pV').value=r.prog_vocab||''; $('#vCounsel').value=r.counsel||'';
