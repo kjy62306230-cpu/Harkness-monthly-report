@@ -549,7 +549,9 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
 .hist-i.draft .cont.alt:hover{background:var(--fill)}
 @media(max-width:400px){ .hist-i.draft .draftR{flex-direction:column} .hist-i.draft .draftR .cont{margin-top:0} .hist-i.draft .draftR .cont:first-child{margin-top:10px} }
 .hist-r{display:flex;align-items:stretch}
-.hist-t{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:12px 14px;text-align:left;transition:background .15s}
+.hist-t{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:12px 14px;text-align:left;transition:background .15s;flex-wrap:wrap}
+.hist-t .sent{flex:0 0 auto;font-size:11.5px;font-weight:700;color:#1a9c6b;
+  background:rgba(26,156,107,.14);padding:2px 8px;border-radius:999px;white-space:nowrap}
 .histE{flex:0 0 auto;width:42px;border:0;border-left:1px solid var(--sep);background:transparent;
   color:var(--ink3);cursor:pointer;display:grid;place-items:center;transition:background .15s,color .15s}
 .histE svg{width:15px;height:15px;display:block}
@@ -771,7 +773,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v41</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v42</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -1089,7 +1091,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v41';
+const APP_VER = 'v42';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1379,7 +1381,9 @@ function teacherName(){ return CUR?.teachers?.name||ME?.name||''; }
 
 /* ---- 월간 진도 / 시험대비 전환 ---- */
 function applyKind(k,redraw){
+  const prevKind = KIND;
   KIND = (k==='exam')?'exam':'monthly';
+  const kindChanged = prevKind!==KIND;
   const ex = KIND==='exam';
   $$('#kindSw button').forEach(b=>b.classList.toggle('on', b.dataset.kind===KIND));
   $('#secExam').hidden = !ex;
@@ -1390,7 +1394,7 @@ function applyKind(k,redraw){
   $('#kindHint').textContent = ex
     ? '시험 범위와 대비 상황을 학부모께 알리는 리포트입니다. 월간 진도와 따로 저장됩니다.'
     : '한 달 수업 내용을 학부모께 알리는 기본 리포트입니다.';
-  if(redraw){ DIRTY=true; drawCard(); }
+  if(redraw){ if(kindChanged) DIRTY=true; drawCard(); }
 }
 $$('#kindSw button').forEach(b=>b.onclick=()=>applyKind(b.dataset.kind,true));
 
@@ -2439,12 +2443,12 @@ function openPick(mode){
   if(!hasContent()){ toast('내용을 먼저 입력해 주세요'); return; }
   PICKMODE=mode; PICKBLOB=null;
   const send=mode==='send';
+  const pc=!isMobile();
   $('#pickTitle').textContent = send
-    ? (isMobile() ? '어떤 파일로 보낼까요?' : '어떤 파일로 내려받을까요?')
+    ? (pc ? '어떤 파일로 내려받을까요?' : '어떤 파일로 보낼까요?')
     : '어떤 파일로 저장할까요?';
   $('#pickSub').textContent   = `${CUR.students.name} 학생 · ${ymLabel(PERIOD)}`;
   $('#pickImgT').textContent  = (send && !pc) ? '이미지로 보내기' : '이미지로 저장';
-  const pc=!isMobile();
   $('#pickImgD').textContent  = pc ? 'PNG 파일로 내려받습니다. 카톡 대화창에 끌어다 놓으면 됩니다.'
                             : (send ? '카톡 대화창에 사진으로 들어갑니다. 가장 많이 쓰는 방법이에요.'
                                     : '카톡으로 바로 보내기 좋습니다. 가장 많이 쓰는 방법이에요.');
@@ -2462,8 +2466,12 @@ function sentGuard(){
     return confirm('이미 발송 완료로 기록돼 있습니다.\n다시 저장하고 새 기록을 남길까요?');
   return true;
 }
-$('#btnFile').onclick=()=>openPick('save');   // 파일만 받는다. 발송 상태는 안 건드림
-$('#btnSent').onclick=()=>{ if(sentGuard()) openPick('send'); };
+function safeOpenPick(mode){
+  try{ openPick(mode); }
+  catch(e){ console.error(e); toast('화면을 여는 중 문제가 생겼습니다: '+e.message); }
+}
+$('#btnFile').onclick=()=>safeOpenPick('save');   // 파일만 받는다. 발송 상태는 안 건드림
+$('#btnSent').onclick=()=>{ if(sentGuard()) safeOpenPick('send'); };
 
 async function buildCardBlob(kind){
   await drawCard();
@@ -2479,13 +2487,25 @@ async function buildCardBlob(kind){
 }
 
 /* 발송 완료로 기록 — 저장만 해도 완료로 잡는다 */
+let SENDING=false;
 async function markSent(mode){
-  const again=LOGS.length>0;
-  await save('sent', true);
-  await loadHistory();
-  closePick();
-  await close();
-  toast(again ? '새 기록으로 남겼습니다' : '발송 완료로 기록했습니다');
+  if(SENDING) return;
+  SENDING=true;
+  const yes=$('#pickYes'), only=$('#pickOnly');
+  if(yes) yes.disabled=true; if(only) only.disabled=true;
+  try{
+    const again=LOGS.length>0;
+    pickmsg('발송 기록을 저장하는 중…','work');
+    const d=await save('sent', true);
+    if(!d){ pickmsg('발송 기록을 저장하지 못했습니다. 다시 시도해 주세요.','err'); return; }
+    await loadHistory();
+    closePick();
+    await close();
+    toast((again?'새 기록으로 남겼습니다 · ':'발송 완료로 기록했습니다 · ')+fmtTs(d.sent_at));
+  }finally{
+    SENDING=false;
+    if(yes) yes.disabled=false; if(only) only.disabled=false;
+  }
 }
 
 async function runPick(kind){
@@ -2520,7 +2540,7 @@ async function runPick(kind){
     // 피드백 저장 — 파일로만 받는다. 발송 상태는 건드리지 않는다
     const ok=await shareOrSave(blob,name,title);
     if(!ok){ pickmsg(''); return; }
-    if(CUR.status!=='sent') await save('drafted', true);
+    await save('drafted', true);   // save() 가 상태 정책을 알아서 지킨다
     await loadHistory();
     closePick();
     toast(isMobile()
@@ -2603,7 +2623,7 @@ async function loadHistory(){
     const ver=r.version>1?`<span class="vtag">${r.version}차 수정</span>`:'';
     return `<div class="hist-i">
       <div class="hist-r">
-        <button class="hist-t" data-h="${i}"><b>${ymLabel(r.period)}</b>${ver}<span class="pv">${esc(pv)}</span><span class="ar">▾</span></button>
+        <button class="hist-t" data-h="${i}"><b>${ymLabel(r.period)}</b>${ver}<span class="sent">${esc(fmtTs(r.sent_at))} 발송</span><span class="pv">${esc(pv)}</span><span class="ar">▾</span></button>
         <button class="histE" data-l="${i}" title="이 내용 불러와서 수정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
         ${ME.role==='director'?`<button class="histX" data-d="${i}" title="이 기록 삭제">✕</button>`:''}
       </div>
@@ -2621,7 +2641,7 @@ async function loadHistory(){
     body.classList.toggle('hide',op); t.querySelector('.ar').textContent=op?'▾':'▴';
   });
   const sf=$('#saveDraftFile');
-  if(sf) sf.onclick=()=>openPick('save');
+  if(sf) sf.onclick=()=>safeOpenPick('save');
   const cd=$('#contDraft');
   if(cd) cd.onclick=()=>{
     const f=recFields(CUR);
