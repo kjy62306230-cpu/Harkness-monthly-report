@@ -376,7 +376,41 @@ main{max-width:1180px;margin:0 auto;padding:16px 20px 90px}
   border-top:1px solid var(--sep);background:var(--raised);
   -webkit-backdrop-filter:var(--blurbg); backdrop-filter:var(--blurbg);
 }
-.dfoot .btn{flex:1}
+.dfoot .btn{flex:1;min-width:0;white-space:nowrap}
+.dfoot #btnSent{flex:1.25}
+.btn.ghost.strong{font-weight:800;border-color:var(--line2,var(--sep));color:var(--acc)}
+/* 저장 형식 고르기 */
+.pick{display:flex;flex-direction:column;gap:10px}
+.pickBtn{
+  display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+  padding:16px 18px;border-radius:16px;border:1px solid var(--sep);
+  background:var(--raised);color:var(--ink);cursor:pointer;
+  transition:background .15s,border-color .15s,transform .08s;
+}
+.pickBtn:hover{background:var(--fill)}
+.pickBtn:active{transform:scale(.99)}
+.pickBtn .pi{
+  width:42px;height:42px;flex:0 0 auto;border-radius:12px;display:grid;place-items:center;
+  background:var(--fill2);color:var(--acc)
+}
+.pickBtn .pi svg{width:22px;height:22px}
+.pickBtn b{display:block;font-size:15.5px;font-weight:800;letter-spacing:-.02em}
+.pickBtn span{display:block;font-size:12.5px;color:var(--ink3);margin-top:2px;line-height:1.45}
+.pconf{margin-top:14px;padding:14px 16px;border-radius:14px;background:var(--fill);border:1px solid var(--sep)}
+.pconf p{margin:0 0 10px;font-size:13.5px;font-weight:600;color:var(--ink2);line-height:1.5}
+.pconfR{display:flex;gap:8px}
+.pconfR .btn{flex:1}
+.plain{display:block;width:100%;margin-top:14px;padding:8px;background:none;border:0;
+  color:var(--ink3);font-size:12.5px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.plain:hover{color:var(--ink2)}
+/* 모아보기 빠른 선택 */
+.pfilt{display:flex;gap:7px;margin:0 0 12px;flex-wrap:wrap}
+.pfilt button{
+  padding:7px 13px;border-radius:999px;border:1px solid var(--sep);background:var(--raised);
+  color:var(--ink2);font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s
+}
+.pfilt button:hover{background:var(--fill)}
+.pfilt button.on{background:var(--acc);border-color:var(--acc);color:#fff}
 
 /* ---------- 섹션 ---------- */
 .sec{margin-bottom:22px}
@@ -706,7 +740,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v34</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v35</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -815,11 +849,10 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
       <h3>학부모께 보낼 카드 <small id="cardSize"></small></h3>
       <div class="cardwrap"><canvas id="cardCv"></canvas></div>
       <div class="actions">
-        <button id="btnImg">이미지 저장</button>
         <button id="btnTxt">문구 복사</button>
       </div>
-      <p class="hint"><b>이미지 저장</b> → 카톡으로 학부모께 전송 → <b>발송 완료</b> 체크. 이 순서입니다.<br>
-      발송한 뒤 내용을 고치고 다시 <b>발송 완료</b>를 누르면, <b>이전 기록은 그대로 두고</b> 그 위에 새 기록이 쌓입니다.</p>
+      <p class="hint">아래 <b>발송</b>을 누르면 이미지 / PDF를 고르고, 카톡으로 바로 보낸 뒤 <b>발송 완료</b>로 기록됩니다.<br>
+      발송한 뒤 내용을 고치고 다시 <b>발송</b>을 누르면, <b>이전 기록은 그대로 두고</b> 그 위에 새 기록이 쌓입니다.</p>
     </div>
 
     <div class="sec">
@@ -828,8 +861,9 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
     </div>
   </div>
   <div class="dfoot">
-    <button class="btn ghost" id="btnSave">저장만</button>
-    <button class="btn" id="btnSent">발송 완료</button>
+    <button class="btn ghost" id="btnSave">임시저장</button>
+    <button class="btn ghost strong" id="btnSaveAs">저장</button>
+    <button class="btn" id="btnSent">발송</button>
   </div>
 </aside>
 <div class="toast" id="toast"></div>
@@ -869,17 +903,54 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
         <select id="packWho" class="hide"></select>
         <div class="packStat" id="packStat"></div>
       </div>
+      <div class="pfilt" id="packFilt">
+        <button data-pf="done" class="on">✅ 발송 완료만</button>
+        <button data-pf="todo">⚠️ 아직 안 보낸 학생만</button>
+        <button data-pf="all">전체</button>
+      </div>
       <div id="packList"></div>
       <div class="voiceMsg hide" id="packMsg"></div>
     </div>
     <div class="dfoot">
-      <button class="btn ghost" id="packImg">이미지로 저장</button>
-      <button class="btn" id="packPdf">PDF로 저장</button>
+      <button class="btn ghost" id="packImg">이미지로 저장·공유</button>
+      <button class="btn" id="packPdf">PDF로 저장·공유</button>
     </div>
   </div>
 </div>
 
 <!-- 카드 한 장 크게 보기 -->
+<!-- 저장 형식 고르기 -->
+<div class="modal hide" id="savePick">
+  <div class="mbox" style="max-width:420px">
+    <div class="dhead">
+      <div><h2 id="pickTitle">어떻게 저장할까요?</h2><div class="sub" id="pickSub">—</div></div>
+      <button class="x" id="pickClose">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="pick">
+        <button class="pickBtn" id="pickImg" type="button">
+          <span class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>
+          <span style="flex:1"><b id="pickImgT">이미지로 저장</b><span id="pickImgD">카톡으로 바로 보내기 좋습니다. 가장 많이 쓰는 방법이에요.</span></span>
+        </button>
+        <button class="pickBtn" id="pickPdf" type="button">
+          <span class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 18h4"/></svg></span>
+          <span style="flex:1"><b id="pickPdfT">PDF로 저장</b><span id="pickPdfD">문서로 보관하거나 인쇄할 때 쓰세요.</span></span>
+        </button>
+      </div>
+      <div class="pconf hide" id="pickConf">
+        <p>파일을 받으셨습니다. 카톡으로 학부모께 보내셨나요?</p>
+        <div class="pconfR">
+          <button class="btn ghost" id="pickNo" type="button">아직이요</button>
+          <button class="btn" id="pickYes" type="button">보냈어요 · 발송 완료</button>
+        </div>
+      </div>
+      <div class="voiceMsg hide" id="pickMsg"></div>
+      <button class="plain hide" id="pickOnly" type="button">파일 없이 발송 완료만 기록하기</button>
+    </div>
+    <div class="dfoot"><button class="btn ghost" id="pickCancel">취소</button></div>
+  </div>
+</div>
+
 <div class="modal hide" id="one">
   <div class="mbox" style="max-width:560px">
     <div class="dhead"><div><h2 id="oneName">—</h2><div class="sub" id="oneMeta"></div></div><button class="x" id="oneClose">✕</button></div>
@@ -985,7 +1056,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v34';
+const APP_VER = 'v35';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1247,7 +1318,7 @@ function open(id){
   $('#eT').value=CUR.exam_title||''; $('#eR').value=CUR.exam_range||''; $('#eC').value=CUR.exam_counsel||'';
   applyKind(CUR.kind||'monthly', false);
   $('#carry').classList.toggle('hide',!carried);
-  $('#btnSent').textContent='발송 완료';
+  $('#btnSent').textContent='발송';
   stamp();
   stopRec(); vmsg(''); $('#trBox').classList.add('hide'); $('#recTime').textContent='0:00'; BEFORE=null;
   pmsg(''); $('#chgBox').classList.add('hide'); PBEFORE=null;
@@ -1559,6 +1630,7 @@ $('#chipPack').onclick=()=>{
 $('#packWho').onchange=buildPack;
 $('#packClose').onclick=()=>$('#pack').classList.add('hide');
 
+let PACKFILT='done';
 function buildPack(){
   const who = ME.role==='director' ? $('#packWho').value : ME.id;
   const tname = who==='all' ? '' : (packTeachers().find(t=>t.id===who)||{}).name || '';
@@ -1566,7 +1638,8 @@ function buildPack(){
   if(who!=='all') rows = rows.filter(r=>r.teacher_id===who);
   rows.sort((a,b)=>a.students.name.localeCompare(b.students.name,'ko'));
 
-  PACK = rows.map(r=>({ rec:r, f:recFields(r), on:r.status==='sent' }));
+  PACK = rows.map(r=>({ rec:r, f:recFields(r),
+    on: PACKFILT==='all' ? true : (PACKFILT==='done' ? r.status==='sent' : r.status!=='sent') }));
   const done = PACK.filter(x=>x.rec.status==='sent');
   const rest = PACK.filter(x=>x.rec.status!=='sent');
 
@@ -1604,6 +1677,10 @@ function buildPack(){
     packCount();
   });
   $$('#packList [data-pv]').forEach(b=>b.onclick=()=>openOne(+b.dataset.pv));
+  $$('#packFilt [data-pf]').forEach(b=>{
+    b.classList.toggle('on', b.dataset.pf===PACKFILT);
+    b.onclick=()=>{ PACKFILT=b.dataset.pf; buildPack(); };
+  });
   $$('#packList [data-pall]').forEach(b=>b.onclick=()=>{
     const cls=b.dataset.pall, arr=cls==='done'?done:rest;
     const target=!arr.every(x=>x.on);
@@ -1616,8 +1693,8 @@ function packWhoName(){ return ($('#packSub').textContent||'').replace(/[^\uAC00
 function packCount(){
   const n=PACK.filter(x=>x.on).length;
   $('#packImg').disabled=!n; $('#packPdf').disabled=!n;
-  $('#packImg').textContent=n?`이미지로 저장 (${n})`:'이미지로 저장';
-  $('#packPdf').textContent=n?`PDF로 저장 (${n})`:'PDF로 저장';
+  $('#packImg').textContent=n?`이미지로 저장·공유 (${n})`:'이미지로 저장·공유';
+  $('#packPdf').textContent=n?`PDF로 저장·공유 (${n})`:'PDF로 저장·공유';
   pmsg2('');
 }
 
@@ -2217,19 +2294,112 @@ function cardBlob(){ return new Promise(res=>$('#cardCv').toBlob(res,'image/png'
 function fileName(){ return `${CUR.students.name}_${PERIOD}_학습리포트.png`; }
 function download(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.append(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },800); }
 
-$('#btnImg').onclick=async()=>{
+/* ---- 저장 / 발송 : 이미지 · PDF 고르기 ---- */
+let PICKMODE='save';          // 'save' | 'send'
+let PICKBLOB=null, PICKNAME='';
+
+function pickmsg(t,cls){ const e=$('#pickMsg'); if(!t){ e.className='voiceMsg hide'; return; }
+  e.className='voiceMsg'+(cls?' '+cls:''); e.textContent=t; }
+function closePick(){ $('#savePick').classList.add('hide'); pickmsg('');
+  $('#pickConf').classList.add('hide'); PICKBLOB=null; }
+$('#pickClose').onclick=$('#pickCancel').onclick=closePick;
+
+function openPick(mode){
+  if(!CUR){ toast('학생을 먼저 선택해 주세요'); return; }
   if(!hasContent()){ toast('내용을 먼저 입력해 주세요'); return; }
-  await drawCard();
-  const blob=await cardBlob(); const file=new File([blob], fileName(), { type:'image/png' });
-  let shared=false;
-  if(navigator.canShare && navigator.canShare({ files:[file] })){
-    try{ await navigator.share({ files:[file], title:`${CUR.students.name} 학습 리포트` }); shared=true; }
-    catch(e){ if(e.name==='AbortError') return; }
+  PICKMODE=mode; PICKBLOB=null;
+  const send=mode==='send';
+  $('#pickTitle').textContent = send ? '어떤 파일로 보낼까요?' : '어떻게 저장할까요?';
+  $('#pickSub').textContent   = `${CUR.students.name} 학생 · ${ymLabel(PERIOD)}`;
+  $('#pickImgT').textContent  = send ? '이미지로 보내기' : '이미지로 저장';
+  $('#pickImgD').textContent  = send ? '카톡 대화창에 사진으로 들어갑니다. 가장 많이 쓰는 방법이에요.'
+                                     : '카톡으로 바로 보내기 좋습니다. 가장 많이 쓰는 방법이에요.';
+  $('#pickPdfT').textContent  = send ? 'PDF로 보내기' : 'PDF로 저장';
+  $('#pickPdfD').textContent  = send ? '카톡에 파일로 들어갑니다. 보관·인쇄하기 좋아요.'
+                                     : '문서로 보관하거나 인쇄할 때 쓰세요.';
+  $('#pickOnly').classList.toggle('hide', !send);
+  $('#pickConf').classList.add('hide');
+  $('#pickImg').disabled=false; $('#pickPdf').disabled=false;
+  pickmsg(''); $('#savePick').classList.remove('hide');
+}
+$('#btnSaveAs').onclick=()=>openPick('save');
+$('#btnSent').onclick=()=>{
+  if(CUR && CUR.status==='sent' && !DIRTY){
+    if(!confirm('이미 발송 기록이 있습니다. 다시 보내고 새 기록을 남길까요?')) return;
   }
-  if(!shared) download(blob, fileName());
-  await save('drafted', true);
-  toast(shared?'저장했습니다. 발송 후 [발송 완료]를 눌러주세요':'이미지를 받았습니다. 카톡으로 보낸 뒤 [발송 완료]');
+  openPick('send');
 };
+
+async function buildCardBlob(kind){
+  await drawCard();
+  if(kind==='img') return { blob:await cardBlob(), name:fileName() };
+  await loadJsPDF();
+  const { jsPDF }=window.jspdf;
+  const doc=new jsPDF({ unit:'pt', format:'a4', compress:true });
+  const PW=doc.internal.pageSize.getWidth(), PH=doc.internal.pageSize.getHeight(), M=24;
+  const cv=$('#cardCv'), img=cv.toDataURL('image/jpeg',0.92);
+  const w=PW-M*2, h=cv.height*(w/cv.width), fit=Math.min(1,(PH-M*2)/h);
+  doc.addImage(img,'JPEG', M+(w-w*fit)/2, M, w*fit, h*fit);
+  return { blob:doc.output('blob'), name:fileName().replace(/\.png$/,'.pdf') };
+}
+
+/* 발송 완료로 기록 */
+async function markSent(){
+  const again=LOGS.length>0;
+  await save('sent', true);
+  await loadHistory();
+  closePick();
+  await close();
+  toast(again?'새 기록으로 남겼습니다':'발송 완료로 기록했습니다');
+}
+
+async function runPick(kind){
+  const b=kind==='img'?$('#pickImg'):$('#pickPdf');
+  const other=kind==='img'?$('#pickPdf'):$('#pickImg');
+  b.disabled=true; other.disabled=true;
+  try{
+    pickmsg(kind==='img'?'이미지를 만들고 있습니다…':'PDF를 만들고 있습니다…','work');
+    const { blob, name }=await buildCardBlob(kind);
+    PICKBLOB=blob; PICKNAME=name;
+    const title=`${CUR.students.name} 학습 리포트`;
+    const file=new File([blob],name,{type:blob.type});
+
+    if(PICKMODE==='send'){
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        pickmsg('보낼 앱을 골라주세요. 카톡을 선택하면 됩니다.','work');
+        try{
+          await navigator.share({ files:[file], title });
+          await markSent();                       // 공유 끝 → 발송 완료
+          return;
+        }catch(e){
+          if(e && e.name==='AbortError'){ pickmsg('보내기를 취소했습니다. 다시 고르셔도 됩니다.'); return; }
+          // 공유 실패 → 내려받기로 대체
+        }
+      }
+      download(blob,name);
+      pickmsg('');
+      $('#pickConf').classList.remove('hide');     // 보냈는지 확인 받기
+      return;
+    }
+
+    // 저장만
+    const ok=await shareOrSave(blob,name,title);
+    if(!ok){ pickmsg(''); return; }
+    await save('drafted', true);
+    closePick();
+    toast(kind==='img'?'저장했습니다. 카톡으로 보낸 뒤 [발송]을 눌러주세요':'PDF로 저장했습니다');
+  }catch(e){ pickmsg('실패: '+e.message,'err'); }
+  finally{ b.disabled=false; other.disabled=false; }
+}
+$('#pickImg').onclick=()=>runPick('img');
+$('#pickPdf').onclick=()=>runPick('pdf');
+$('#pickYes').onclick=()=>markSent();
+$('#pickNo').onclick=()=>{ $('#pickConf').classList.add('hide'); pickmsg('괜찮습니다. 보내신 뒤에 [발송]을 다시 눌러주세요.'); };
+$('#pickOnly').onclick=async()=>{
+  if(!confirm('파일을 보내지 않고 발송 완료로만 기록할까요?')) return;
+  await markSent();
+};
+
 function hasContent(){ const f=fields();
   return f.kind==='exam' ? !!(f.exam_range||f.exam_counsel)
                          : !!(f.counsel||f.prog_grammar||f.prog_reading||f.prog_listening||f.prog_vocab); }
@@ -2331,18 +2501,8 @@ async function save(status,silent){
   if(!silent) await close();
   return data;
 }
-$('#btnSave').onclick=async()=>{ await save('drafted'); toast('저장됐습니다'); };
+$('#btnSave').onclick=async()=>{ await save('drafted'); toast('임시저장했습니다'); };
 
-$('#btnSent').onclick=async()=>{
-  if(!CUR) return;
-  if(!hasContent()){ toast('내용을 먼저 입력해 주세요'); return; }
-  if(CUR.status==='sent' && !DIRTY){ toast('이미 발송 기록이 있습니다. 고친 내용이 있을 때 다시 눌러주세요'); return; }
-  const again=LOGS.length>0;
-  await save('sent', true);
-  await loadHistory();
-  await close();
-  toast(again?'새 기록으로 남겼습니다':'발송 완료로 기록했습니다');
-};
 
 /* ==================== 관리 ==================== */
 $('#btnAdmin').onclick=async()=>{ $('#admin').classList.remove('hide'); await drawAdmin(); };
