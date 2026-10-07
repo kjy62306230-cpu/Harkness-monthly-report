@@ -773,7 +773,7 @@ td select:focus,td input:focus{border-color:var(--accent);background:var(--surfa
   <header><div class="hwrap">
     <div class="hlogo"><img id="logoImg2" alt="">하크니스 · 학습 리포트</div>
     <div class="who">
-      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v42</button>
+      <button class="ver" id="ver" type="button" title="누르면 최신 화면으로 새로고침합니다">v43</button>
       <span id="meName"></span><span class="pill" id="meRole"></span>
       <button class="thBtn" id="btnTheme" type="button" title="화면 밝기">
         <span id="thIcon">A</span><span id="thTxt">자동</span>
@@ -1091,7 +1091,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
 </script>
 <script>
 /* ==================== 설정 ==================== */
-const APP_VER = 'v42';
+const APP_VER = 'v43';
 
 /* ---------- 화면 밝기: 자동 / 밝게 / 어둡게 ---------- */
 const THKEY='hk_theme';
@@ -1285,10 +1285,10 @@ function buildPeriods(){
 const SEL='*, students(id,name,school,grade,class_label,status), teachers(id,name)';
 async function load(){
   const { data:cid, error:ce }=await sb.rpc('ensure_cycle',{ p_period:PERIOD });
-  if(ce){ alert('사이클 열기 실패: '+ce.message); return; }
+  if(ce){ alert('사이클 열기 실패: '+ce.message); return false; }
   CYCLE=cid;
   const { data, error }=await sb.from('feedback_records').select(SEL).eq('cycle_id',CYCLE);
-  if(error){ alert(error.message); return; }
+  if(error){ alert(error.message); return false; }
   ROWS=(data||[]).filter(r=>r.students&&r.students.status==='active').sort((a,b)=>a.students.name.localeCompare(b.students.name,'ko'));
   MISS=new Set(); PREV={};
   const { data:pc }=await sb.from('feedback_cycles').select('id').eq('period',ymPrev(PERIOD)).maybeSingle();
@@ -1305,6 +1305,7 @@ async function load(){
     sel.value=keep; TFILTER=keep; sel.onchange=()=>{ TFILTER=sel.value; render(); };
   }
   render();
+  return true;
 }
 function scoped(){ let r=ROWS; if(ME.role==='director'&&TFILTER!=='all') r=TFILTER==='none'?r.filter(x=>!x.teacher_id):r.filter(x=>x.teacher_id===TFILTER); return r; }
 
@@ -1671,8 +1672,8 @@ function progSummary(f){
     if(!r.length) return f.exam_title?`[시험대비] ${f.exam_title}`:'';
     return `[시험대비] ${f.exam_title?f.exam_title+' · ':''}${r[0]}${r.length>1?` 외 ${r.length-1}줄`:''}`;
   }
-  const P=progressItems(f); if(!P.length) return '';
-  const first=P[0], it=first.items[0];
+  const P=progressItems(f).filter(g=>g.items&&g.items.length); if(!P.length) return '';
+  const first=P[0], it=first.items[0]; if(!it) return '';
   const head=`[${first.label}] ${[it.book,it.range].filter(Boolean).join(' ')}`;
   const extra=P.reduce((a,g)=>a+g.items.length,0)-1;
   return extra>0 ? `${head} 외 ${extra}건` : head;
@@ -1698,16 +1699,30 @@ function fillPackPeriods(){
   ps.value=PERIOD;
 }
 $('#packPeriod').onchange=async()=>{
-  const ps=$('#packPeriod'); const v=ps.value;
-  if(v===PERIOD) return;
+  const ps=$('#packPeriod'); const v=ps.value, prev=PERIOD;
+  if(v===prev) return;
   ps.disabled=true; pmsg2(`${ymLabel(v)} 불러오는 중…`,'work');
   $('#packList').innerHTML='<p class="hint" style="margin:0">불러오는 중…</p>';
-  PERIOD=v;
-  const main=$('#selPeriod'); if(main) main.value=v;     // 뒤쪽 화면도 같이 맞춘다
-  try{ await load(); }catch(e){ pmsg2('불러오지 못했습니다: '+e.message,'err'); }
+  const main=$('#selPeriod');
+  PERIOD=v; if(main) main.value=v;
+  let ok=false;
+  try{ ok = await load()!==false; }catch(e){ ok=false; }
+  if(!ok){                                   // 실패하면 이전 달로 되돌린다
+    PERIOD=prev; if(main) main.value=prev;
+    ps.value=prev; ps.disabled=false;
+    try{ await load(); }catch(e){}
+    safeBuildPack();
+    pmsg2(`${ymLabel(v)} 자료를 불러오지 못했습니다. ${ymLabel(prev)} 그대로 둡니다.`,'err');
+    return;
+  }
   ps.disabled=false; ps.value=PERIOD;
-  buildPack(); pmsg2('');
+  safeBuildPack(); pmsg2('');
 };
+function safeBuildPack(){
+  try{ buildPack(); }
+  catch(e){ console.error(e);
+    $('#packList').innerHTML='<p class="hint" style="margin:0">목록을 그리지 못했습니다: '+esc(e.message)+'</p>'; }
+}
 $('#packWho').onchange=buildPack;
 $('#packClose').onclick=()=>$('#pack').classList.add('hide');
 
@@ -1771,13 +1786,18 @@ function buildPack(){
     const n = b.dataset.pf==='done'?done.length : b.dataset.pf==='todo'?rest.length : PACK.length;
     const base = b.dataset.pf==='done'?'✅ 발송 완료만' : b.dataset.pf==='todo'?'⚠️ 아직 안 보낸 학생만' : '전체 보기';
     b.textContent = `${base} ${n}`;
-    b.onclick=()=>{ PACKFILT=b.dataset.pf; buildPack(); };
+    b.onclick=()=>{ if(PACKFILT===b.dataset.pf) return; PACKFILT=b.dataset.pf; buildPack(); };
   });
   $$('#packList [data-pall]').forEach(b=>b.onclick=()=>{
     const cls=b.dataset.pall, arr=cls==='done'?done:rest;
     const target=!arr.every(x=>x.on);
     arr.forEach(x=>x.on=target);
-    buildPack();
+    $$('#packList [data-pk]').forEach(c=>{           // 다시 그리지 않고 화면만 맞춘다
+      const x=PACK[+c.dataset.pk]; if(!x) return;
+      c.checked=x.on; c.closest('.prow').classList.toggle('off',!x.on);
+    });
+    b.textContent = `모두 ${target?'해제':'선택'}`;
+    packCount();
   });
   packCount();
 }
@@ -1791,7 +1811,6 @@ function packCount(){
   const mk=$('#packMark');
   mk.disabled=!todo;
   mk.textContent = todo ? `✅ 발송 완료로 표시 (${todo})` : '✅ 발송 완료로 표시';
-  pmsg2('');
 }
 
 /* ---- 카드 한 장 크게 ---- */
@@ -1937,7 +1956,7 @@ $('#packImg').onclick=async()=>{
     await shareOrSave(blob,name,`${ymLabel(PERIOD)} 피드백 모음`);
     pmsg2(`${list.length}명을 한 장으로 저장했습니다.`);
   }catch(e){ pmsg2('실패: '+e.message,'err'); }
-  finally{ b.disabled=false; b.textContent=lbl; }
+  finally{ packCount(); }
 };
 
 /* ---- 선택한 학생 한 번에 발송 완료로 표시 ---- */
@@ -1947,23 +1966,36 @@ $('#packMark').onclick=async()=>{
   const names=list.slice(0,6).map(x=>x.rec.students.name).join(', ')+(list.length>6?` 외 ${list.length-6}명`:'');
   if(!confirm(`아래 ${list.length}명을 발송 완료로 표시합니다.\n\n${names}\n\n카톡으로 이미 보내신 학생만 체크해 주세요.`)) return;
 
-  const b=$('#packMark'); const lbl=b.textContent; b.disabled=true; b.textContent='처리 중…';
+  const b=$('#packMark'); b.disabled=true; b.textContent='처리 중…';
+  packLock(true);
   pmsg2(`${list.length}명을 발송 완료로 바꾸는 중…`,'work');
-  const now=new Date().toISOString();
-  let done=0, fail=0;
-  for(const x of list){
-    const { data, error }=await sb.from('feedback_records')
-      .update({ status:'sent', sent_at:now })
-      .eq('id', x.rec.id).select(SEL).single();
-    if(error){ fail++; continue; }
-    const i=ROWS.findIndex(r=>r.id===x.rec.id); if(i>=0) ROWS[i]=data;
-    x.rec=data; done++;
-    b.textContent=`${done} / ${list.length}`;
-  }
-  render(); buildPack();
-  pmsg2(fail ? `${done}명 완료 · ${fail}명 실패했습니다. 다시 시도해 주세요.` : `${done}명을 발송 완료로 표시했습니다.`, fail?'err':'');
-  b.disabled=false; if(!$('#packMark').textContent.includes('표시')) b.textContent=lbl;
+  const now=new Date().toISOString(), per=PERIOD;
+  let done=0, fail=0, aborted=false;
+  try{
+    for(const x of list){
+      if(PERIOD!==per){ aborted=true; break; }      // 도중에 달이 바뀌면 멈춘다
+      const { data, error }=await sb.from('feedback_records')
+        .update({ status:'sent', sent_at:now })
+        .eq('id', x.rec.id).select(SEL).single();
+      if(error){ fail++; continue; }
+      const i=ROWS.findIndex(r=>r.id===x.rec.id); if(i>=0) ROWS[i]=data;
+      x.rec=data; done++;
+      b.textContent=`${done} / ${list.length}`;
+    }
+  }finally{ packLock(false); }
+  render(); safeBuildPack();
+  pmsg2(aborted ? `${done}명까지만 처리하고 멈췄습니다. 다시 눌러주세요.`
+      : fail ? `${done}명 완료 · ${fail}명 실패했습니다. 다시 시도해 주세요.`
+      : `${done}명을 발송 완료로 표시했습니다 · ${fmtTs(now)}`, (fail||aborted)?'err':'');
 };
+/* 일괄 처리 중에는 모아보기 안을 잠근다 */
+function packLock(on){
+  $('#packPeriod').disabled=on;
+  $('#packWho').disabled=on;
+  $$('#packFilt button').forEach(x=>x.disabled=on);
+  const body=$('#packBody'); if(body){ body.style.opacity=on?'.55':''; }
+  $$('#packList input, #packList button').forEach(x=>x.disabled=on);
+}
 
 /* ---- 전체 → PDF ---- */
 function loadJsPDF(){
@@ -2000,7 +2032,7 @@ $('#packPdf').onclick=async()=>{
     await shareOrSave(blob,name,`${ymLabel(PERIOD)} 피드백 모음`);
     pmsg2(`${list.length}명 · ${list.length}쪽 PDF로 저장했습니다.`);
   }catch(e){ pmsg2('실패: '+e.message,'err'); }
-  finally{ b.disabled=false; b.textContent=lbl; }
+  finally{ packCount(); }
 };
 
 /* ==================== 아이디 · 비밀번호 찾기 ==================== */
